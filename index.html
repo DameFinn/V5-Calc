@@ -888,6 +888,7 @@ const UNDER={MES:"E-mini S&P 500 futures (ES, front month)",
              MNQ:"E-mini Nasdaq-100 futures (NQ, front month)",
              MGC:"COMEX gold futures (GC, front month)"};
 /* ---------- unified JSON ingest (levels + trades) ---------- */
+let lastPayload=null;
 function normalizeTrade(tr){
   const nn=v=>(v===null||v===undefined||v==="")?null:(isNaN(parseFloat(v))?v:parseFloat(v));
   return {
@@ -906,7 +907,13 @@ function normalizeTrade(tr){
 }
 function applyPayload(j){
   if(!j||typeof j!=="object") throw new Error("bad payload");
-  const lv=(j.levels&&typeof j.levels==="object")?j.levels:j;
+  let lv;
+  if(j.levels&&typeof j.levels==="object"){
+    const L=j.levels;
+    if(L[S.market]||L.MES||L.MNQ||L.MGC||L._last){
+      lv = L[S.market] || L._last || L.MES || L.MNQ || L.MGC || {};   // per-symbol map
+    } else { lv = L; }                                                // flat levels object
+  } else { lv = j; }                                                  // flat fallback
   let filled=0, missing=[];
   ["pdh","pdl","pdc","onh","onl","cur","atr","ema","buy"].forEach(k=>{
     const v=parseFloat(lv[k]);
@@ -961,6 +968,7 @@ async function pullLevels(){
       j=JSON.parse(m[0]);
     }
     const r=applyPayload(j);
+    lastPayload=j;
     document.querySelectorAll('#mktSeg button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.market));
     renderMktInputs(); renderAll();
     note.className="pullnote";
@@ -990,6 +998,7 @@ async function livePoll(){
   try{
     const r=await fetch(S.relay,{cache:"no-store"});
     const j=await r.json();
+    lastPayload=j;
     const res=applyPayload(j);
     document.querySelectorAll('#mktSeg button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.market));
     renderMktInputs(); renderAll();
@@ -1017,6 +1026,7 @@ document.getElementById("mktSeg").addEventListener("click",e=>{
   const b=e.target.closest("button[data-m]");if(!b)return;
   S.market=b.dataset.m;
   [...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b));
+  if(lastPayload){ try{applyPayload(lastPayload);}catch(err){} renderMktInputs(); }
   renderAll();
 });
 document.body.addEventListener("input",e=>{
