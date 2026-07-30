@@ -233,6 +233,12 @@
   .tlrun b.pos{color:var(--long);} .tlrun b.neg{color:var(--short);}
   .tlhead{display:grid;grid-template-columns:56px 1fr auto auto;gap:9px;padding:0 10px 6px;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
   .tlhead span:nth-child(3),.tlhead span:nth-child(4){text-align:right;}
+  .rlvls{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+  .rlvl{font-family:var(--mono);font-size:11px;padding:5px 9px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);}
+  .rlvl.hit{color:var(--long);border-color:var(--long);background:var(--long-dim);}
+  .jfilter{margin-bottom:12px;}
+  .jfilter button{flex:1;font-family:var(--mono);font-size:12px;font-weight:600;padding:8px 0;border-radius:8px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);}
+  .jfilter button.on{background:var(--cyan-dim);border-color:var(--cyan);color:#CFEFFF;}
 </style>
 </head>
 <body>
@@ -301,6 +307,7 @@
   <!-- 6 journal -->
   <div class="card">
     <div class="eyebrow"><span class="no">06</span> Trade journal &amp; why-analysis <span class="ln"></span></div>
+    <div class="jseg jfilter" id="jFilter"><button data-mf="All" class="on">All</button><button data-mf="MES">MES</button><button data-mf="MNQ">MNQ</button><button data-mf="MGC">MGC</button></div>
     <div id="jRows"></div>
     <button class="addbtn" id="addJ">+ Add trade to analyze</button>
     <div class="jtot"><span class="lt">Total realized</span><span class="lv" id="jTotal">$0.00</span></div>
@@ -328,6 +335,17 @@
     <div class="eyebrow"><span class="no">08</span> Timeline <span class="ln"></span></div>
     <div id="timeline"></div>
     <div class="hint">Every logged trade in time order — when it happened, the result, and your running P&amp;L through the day.</div>
+  </div>
+
+  <!-- 9 backtest -->
+  <div class="card">
+    <div class="eyebrow"><span class="no">09</span> Backtest — all logged trades <span class="ln"></span>
+      <button id="exportTrades" class="pull">⤓ Export</button></div>
+    <div id="eqcurve"></div>
+    <div style="height:10px"></div>
+    <div class="mini" id="backtest"></div>
+    <div class="pullnote" id="btNote"></div>
+    <div class="hint">Stats &amp; equity curve across your <b>entire logged history</b> (all markets — ignores the tab filter). This analyzes the trades you've logged; it is <b>not</b> a bar-by-bar market re-simulation (that's TradingView's Strategy Tester). <b>Export</b> copies all trades as JSON so you never lose history — paste it into the import box to restore.</div>
   </div>
 
   <div class="foot">
@@ -370,12 +388,13 @@ let S={
     {dir:"Long",entry:null,swept:null,level:null},
     {dir:"Long",entry:null,swept:null,level:null},
   ],
-  journal:[{sym:"MES",dir:"Long",mode:"Reversal",ref:"Overnight",entry:6800,swept:6785,level:6790,ct:1,atr:12,etime:"09:36",dur:8,
+  journal:[{sym:"MES",dir:"Long",mode:"Reversal",ref:"Overnight",entry:6800,swept:6785,level:6790,ct:1,atr:12,date:"07/27",etime:"09:36",dur:8,
     exitMode:"Scaled", ptpQ:1, ptpPx:null, tp1Q:2, tp1Px:null, runQ:1, runPx:6800,
     flags:{bos:true,pressure:true,relvol:true,fvg:false,atrexp:true,absorption:false,barq:true,bias:true,retest:false},
     note:"PTP+TP1 hit, runner stopped at BE", _open:true}],
   relay:"https://v5relay.658d5vgbms.workers.dev",
   live:true,
+  journalFilter:"All",
   perf:{trades:11, wins:3, losses:8, gwin:209.75, gloss:587.25, lwin:173.50, lloss:273.50, wmin:7.4, lmin:84.4, fees:20.90, am:null, pm:null},
 };
 
@@ -613,6 +632,8 @@ function analyzeTrade(t){
     if(e!==null&&x!==null&&c!==null){pnl=(x-e)*sp.pv*c*sign;totalCt=c;}
   }
   const rMult=(pnl!==null&&risk1!==null&&totalCt&&risk1>0)?pnl/(risk1*totalCt):null;
+  const tickVal=sp.tick*sp.pv;
+  const netTicks=(pnl!==null&&totalCt&&tickVal>0)?pnl/(tickVal*totalCt):null;
   let runnerR=null, runnerOutcome=null;
   if(t.exitMode==="Scaled"&&risk1){
     const lr=legDetail.find(l=>l.name==="Runner");
@@ -621,7 +642,7 @@ function analyzeTrade(t){
       runnerOutcome = runnerR>=fullR*0.9?"Full":(Math.abs(runnerR)<=0.3?"BE":(runnerR<-0.3?"Loss":"Partial"));
     }
   }
-  return {take,score,scoreOK,gates,sweep,pnl,rMult,tgtPtp,tgtTp1,tgtRun,beRef,locked,runnerBE,legDetail,totalCt,risk1,runnerR,runnerOutcome};
+  return {take,score,scoreOK,gates,sweep,pnl,rMult,tgtPtp,tgtTp1,tgtRun,beRef,locked,runnerBE,legDetail,totalCt,risk1,runnerR,runnerOutcome,netTicks,stopDist};
 }
 function hourOf(s){
   if(!s)return null; s=(""+s).toLowerCase().trim();
@@ -652,17 +673,36 @@ function analysisHTML(t){
     }
     exitBlk=`<div class="legwrap">${legs}</div>${be}${rtag}`;
   }
+  // R-levels: price of each R target + whether it was reached
+  let rLevels="";
+  {
+    const sp=SPECS[t.sym]||SPECS.MES, e=num(t.entry), sign=t.dir==="Long"?1:-1;
+    if(A.stopDist&&e!==null){
+      let rAch=null;
+      if(t.exitMode==="Scaled"&&A.legDetail.length) rAch=Math.max(...A.legDetail.map(l=>(l.px-e)*sign/A.stopDist));
+      else { const x=num(t.exit); if(x!==null) rAch=(x-e)*sign/A.stopDist; }
+      const rset=[...new Set([num(S.risk.ptpR),num(S.risk.tp1R),num(S.risk.fullR)].filter(v=>v!==null&&v>0))].sort((a,b)=>a-b);
+      if(rset.length){
+        const rTime=R=>{const pr=num(S.risk.ptpR),tr1=num(S.risk.tp1R),fr=num(S.risk.fullR);if(pr!==null&&R===pr)return t.ptpTime;if(tr1!==null&&R===tr1)return t.tp1Time;if(fr!==null&&R===fr)return t.runTime;return "";};
+        const cells=rset.map(R=>{const px=e+sign*R*A.stopDist;const hit=rAch!==null&&rAch>=R-0.05;const tm=rTime(R);return `<span class="rlvl ${hit?'hit':''}">${R}R · ${pts(px)} ${hit?'✓':'·'}${hit&&tm?' @'+tm:''}</span>`;}).join("");
+        rLevels=`<div class="rlvls">${cells}</div>`;
+      }
+    }
+  }
   let pnlS="";
   if(A.pnl!==null){
     const dur=num(t.dur), sess=sessionOf(t.etime);
     const bits=[];
     if(A.rMult!==null)bits.push(A.rMult.toFixed(2)+"R");
+    if(A.netTicks!==null)bits.push((A.netTicks>=0?"+":"")+A.netTicks.toFixed(1)+"t");
     if(A.totalCt!==null)bits.push(A.totalCt+" ct");
     if(dur!==null)bits.push(dur+"m");
-    if(sess)bits.push(sess);
+    const stamp=[(t.date||""),(t.etime||"")].filter(Boolean).join(" ");
+    if(stamp)bits.push(stamp);
+    else if(sess)bits.push(sess);
     pnlS=`<div class="jpl ${A.pnl>=0?'pos':'neg'}">${A.pnl>=0?'Win':'Loss'} ${money(A.pnl)}${bits.length?" · "+bits.join(" · "):""}</div>`;
   }
-  return `<div class="gates">${g}</div><div class="why ${A.take?'t':'s'}">${why}</div>${exitBlk}${pnlS}`;
+  return `<div class="gates">${g}</div><div class="why ${A.take?'t':'s'}">${why}</div>${rLevels}${exitBlk}${pnlS}`;
 }
 function journalStats(){
   let trades=0,wins=0,losses=0,gwin=0,gloss=0,lwin=0,lloss=0;
@@ -730,8 +770,12 @@ function refreshCard(i){
 }
 function renderJournal(){
   const host=document.getElementById("jRows"); if(!host)return;
+  const flt=S.journalFilter||"All";
+  const fb=document.getElementById("jFilter");
+  if(fb)[...fb.children].forEach(x=>x.classList.toggle("on",x.dataset.mf===flt));
   const FL=[["bos","BOS"],["pressure","Pressure"],["relvol","Rel vol"],["fvg","FVG"],["atrexp","ATR exp"],["absorption","Absorption"],["barq","Strong close"],["bias","Bias"]];
   host.innerHTML=S.journal.map((t,i)=>{
+    if(flt!=="All"&&t.sym!==flt)return "";
     const A=analyzeTrade(t);
     const fdefs=t.mode==="Continuation"?FL.concat([["retest","Retest"]]):FL;
     const chipsF=fdefs.map(fd=>`<button class="jflag ${t.flags&&t.flags[fd[0]]?'on':''}" data-jflag="${i}" data-flag="${fd[0]}">${fd[1]}</button>`).join("");
@@ -754,6 +798,7 @@ function renderJournal(){
           <div class="f"><label>Entry</label><input inputmode="decimal" data-j="${i}" data-k="entry" value="${t.entry??''}"></div>
           <div class="f"><label>Swept extreme</label><input inputmode="decimal" data-j="${i}" data-k="swept" value="${t.swept??''}"></div>
           <div class="f"><label>Level swept</label><input inputmode="decimal" data-j="${i}" data-k="level" value="${t.level??''}"></div>
+          <div class="f"><label>Date</label><input inputmode="text" data-j="${i}" data-k="date" value="${t.date??''}" placeholder="MM/DD"></div>
           <div class="f"><label>Entry time (HH:MM)</label><input inputmode="text" data-j="${i}" data-k="etime" value="${t.etime??''}" placeholder="09:36"></div>
           <div class="f"><label>Duration (min)</label><input inputmode="decimal" data-j="${i}" data-k="dur" value="${t.dur??''}" placeholder="min held"></div>
           <div class="f"><label>Note</label><input data-j="${i}" data-k="note" value="${(t.note||'').replace(/"/g,'&quot;')}"></div>
@@ -786,7 +831,7 @@ function renderJournal(){
 function minutesOf(s){const h=hourOf(s);if(h===null)return null;const m=(""+s).match(/\d{1,2}:(\d{2})/);const mm=m?parseInt(m[1],10):0;return h*60+mm;}
 function renderTimeline(){
   const host=document.getElementById("timeline"); if(!host)return;
-  const items=S.journal.map((t,i)=>({t,A:analyzeTrade(t),mins:minutesOf(t.etime)})).filter(o=>o.A.pnl!==null);
+  const items=S.journal.map((t,i)=>({t,A:analyzeTrade(t),mins:minutesOf(t.etime)})).filter(o=>o.A.pnl!==null&&((S.journalFilter||"All")==="All"||o.t.sym===S.journalFilter));
   items.sort((a,b)=>{
     if(a.mins===null&&b.mins===null)return 0;
     if(a.mins===null)return 1; if(b.mins===null)return -1;
@@ -801,15 +846,40 @@ function renderTimeline(){
     const time=t.etime?String(t.etime):"—";
     const runCls=run>=0?"pos":"neg";
     return `<div class="tlrow">
-      <span class="tltime">${time}</span>
-      <span class="tlsym">${t.sym} <b class="${long?'l':'s'}">${long?'L':'S'}</b><em>${t.mode} · ${t.ref||'Prior-day'}</em></span>
+      <span class="tltime">${time}${t.date?`<em style="display:block;font-size:10px;color:var(--dim)">${t.date}</em>`:""}</span>
+      <span class="tlsym">${t.sym} <b class="${long?'l':'s'}">${long?'L':'S'}</b><em>${t.mode} · ${t.ref||'Prior-day'}${o.A.netTicks!==null?" · "+(o.A.netTicks>=0?"+":"")+o.A.netTicks.toFixed(1)+"t":""}</em></span>
       <span class="tlpnl ${o.A.pnl>=0?'pos':'neg'}">${money(o.A.pnl)}</span>
       <span class="tlrun"><b class="${runCls}">${money(run)}</b></span>
     </div>`;
   }).join("");
   host.innerHTML=head+rows;
 }
-function renderAll(){renderTop();renderReads();renderDerived();renderSetups();renderWhatif();renderJournal();renderPerf();renderTimeline();save();}
+function renderBacktest(){
+  const host=document.getElementById("backtest"); if(!host)return;
+  const eq=document.getElementById("eqcurve");
+  const items=S.journal.map(t=>({t,A:analyzeTrade(t),mins:minutesOf(t.etime)})).filter(o=>o.A.pnl!==null);
+  if(!items.length){ host.innerHTML=`<div class="hint" style="margin:0">No completed trades yet.</div>`; if(eq)eq.innerHTML=""; return; }
+  items.sort((a,b)=>{if(a.mins===null&&b.mins===null)return 0;if(a.mins===null)return 1;if(b.mins===null)return -1;return a.mins-b.mins;});
+  let n=items.length,wins=0,losses=0,gw=0,gl=0,sumR=0,rn=0,best=-1e9,worst=1e9,net=0,peak=0,maxDD=0,run=0;
+  const cum=[];
+  items.forEach(o=>{const p=o.A.pnl;net+=p;run+=p;cum.push(run);if(p>0){wins++;gw+=p;}else if(p<0){losses++;gl+=-p;}best=Math.max(best,p);worst=Math.min(worst,p);if(o.A.rMult!=null){sumR+=o.A.rMult;rn++;}peak=Math.max(peak,run);maxDD=Math.max(maxDD,peak-run);});
+  const winRate=wins/n, avgWin=wins?gw/wins:0, avgLoss=losses?gl/losses:0, RR=avgLoss?avgWin/avgLoss:null, pf=gl?gw/gl:null, exp=net/n, avgR=rn?sumR/rn:null;
+  const rows=[
+    ["Trades",String(n)],["Net P/L",money(net)],["Win rate",(winRate*100).toFixed(0)+"%"],
+    ["Reward : risk",RR!=null?RR.toFixed(2)+" : 1":"—"],["Expectancy/trade",money(exp)],
+    ["Profit factor",pf!=null?pf.toFixed(2):"—"],["Avg R",avgR!=null?avgR.toFixed(2):"—"],
+    ["Best / Worst",money(best)+" / "+money(worst)],["Max drawdown",money(-maxDD)]
+  ];
+  host.innerHTML=rows.map(r=>{const neg=typeof r[1]==="string"&&r[1].indexOf("-$")===0;return `<div class="row"><span>${r[0]}</span><b class="${neg?'neg':''}">${r[1]}</b></div>`;}).join("");
+  if(eq){
+    const W=320,H=90,pad=4,min=Math.min(0,...cum),max=Math.max(0,...cum),rng=(max-min)||1;
+    const pts=cum.map((v,i)=>{const x=pad+(cum.length===1?0:i/(cum.length-1))*(W-2*pad);const y=H-pad-((v-min)/rng)*(H-2*pad);return x.toFixed(1)+","+y.toFixed(1);}).join(" ");
+    const zeroY=(H-pad-((0-min)/rng)*(H-2*pad)).toFixed(1);
+    const col=net>=0?"var(--long)":"var(--short)";
+    eq.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none"><line x1="0" y1="${zeroY}" x2="${W}" y2="${zeroY}" stroke="var(--line2)" stroke-width="1" stroke-dasharray="3 3"/><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2"/></svg>`;
+  }
+}
+function renderAll(){renderTop();renderReads();renderDerived();renderSetups();renderWhatif();renderJournal();renderPerf();renderTimeline();renderBacktest();save();}
 
 /* ---------- performance & tuning ---------- */
 const PERF_FIELDS=[
@@ -933,18 +1003,22 @@ const UNDER={MES:"E-mini S&P 500 futures (ES, front month)",
              MGC:"COMEX gold futures (GC, front month)"};
 /* ---------- unified JSON ingest (levels + trades) ---------- */
 let lastPayload=null;
+function rootSym(s){if(!s)return "MES";const up=String(s).toUpperCase();for(const k of ["MES","MNQ","MGC"])if(up.indexOf(k)===0)return k;return up;}
 function normalizeTrade(tr){
   const nn=v=>(v===null||v===undefined||v==="")?null:(isNaN(parseFloat(v))?v:parseFloat(v));
+  const r=rootSym(tr.sym);
   return {
-    sym: SPECS[tr.sym]?tr.sym:(tr.sym||"MES"),
+    sym: SPECS[r]?r:"MES",
     dir: tr.dir==="Short"?"Short":"Long",
     mode: tr.mode==="Continuation"?"Continuation":"Reversal",
     ref: tr.ref!=null?String(tr.ref):"Prior-day",
     entry:nn(tr.entry), swept:nn(tr.swept), level:nn(tr.level), atr:nn(tr.atr),
     etime: tr.etime!=null?String(tr.etime):"", dur:nn(tr.dur),
+    date: tr.date!=null?String(tr.date):"",
     exitMode: tr.exitMode==="Scaled"?"Scaled":"Single",
     ct:nn(tr.ct), exit:nn(tr.exit),
     ptpQ:nn(tr.ptpQ), ptpPx:nn(tr.ptpPx), tp1Q:nn(tr.tp1Q), tp1Px:nn(tr.tp1Px), runQ:nn(tr.runQ), runPx:nn(tr.runPx),
+    ptpTime: tr.ptpTime!=null?String(tr.ptpTime):"", tp1Time: tr.tp1Time!=null?String(tr.tp1Time):"", runTime: tr.runTime!=null?String(tr.runTime):"",
     flags:(tr.flags&&typeof tr.flags==="object")?tr.flags:{},
     note: tr.note!=null?String(tr.note):""
   };
@@ -1113,7 +1187,16 @@ document.body.addEventListener("click",e=>{
   if(jdel){S.journal.splice(+jdel.dataset.jdel,1);renderJournal();save();return;}
   if(e.target.id==="addJ"){S.journal.unshift({sym:S.market,dir:"Long",mode:"Reversal",entry:null,swept:null,level:null,exit:null,ct:1,atr:num(S.mkt.atr),flags:{},note:"",_open:true});renderJournal();save();return;}
   if(e.target.id==="pullBtn"){pullLevels();return;}
+  const mf=e.target.closest("#jFilter button[data-mf]");
+  if(mf){S.journalFilter=mf.dataset.mf;renderJournal();renderTimeline();save();return;}
   if(e.target.id==="liveBtn"){setLive(!S.live);return;}
+  if(e.target.id==="exportTrades"){
+    const data=JSON.stringify({levels:{},trades:S.journal});
+    const n=document.getElementById("btNote");
+    try{ navigator.clipboard.writeText(data); if(n){n.className="pullnote";n.textContent="Copied "+S.journal.length+" trades to clipboard — paste into Notes to back up, or the import box to restore.";} }
+    catch(err){ if(n){n.className="pullnote";n.innerHTML="Select &amp; copy to back up:<br><textarea style='width:100%;height:70px;font-size:10px' onclick='this.select()'>"+data.replace(/</g,"&lt;")+"</textarea>";} }
+    return;
+  }
   if(e.target.id==="jsonApply"){
     const ta=document.getElementById("jsonIn"), note=document.getElementById("jsonNote");
     try{
