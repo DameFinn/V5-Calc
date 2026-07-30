@@ -222,6 +222,17 @@
   .rtag.med{color:var(--warn);background:var(--warn-dim);border:1px solid var(--warn);}
   .rtag.info{color:#CFEFFF;background:var(--cyan-dim);border:1px solid var(--cyan);}
   .rtag.high{color:var(--short);background:var(--short-dim);border:1px solid var(--short);}
+  .tlrow{display:grid;grid-template-columns:56px 1fr auto auto;gap:9px;align-items:center;padding:9px 10px;border-radius:10px;background:var(--panel);border:1px solid var(--line);margin-bottom:7px;}
+  .tltime{font-family:var(--mono);font-size:12px;color:var(--muted);}
+  .tlsym{font-family:var(--mono);font-size:12.5px;color:var(--text);}
+  .tlsym b.l{color:var(--long);} .tlsym b.s{color:var(--short);}
+  .tlsym em{font-style:normal;color:var(--muted);font-size:10.5px;display:block;}
+  .tlpnl{font-family:var(--mono);font-size:13px;font-weight:700;text-align:right;}
+  .tlpnl.pos{color:var(--long);} .tlpnl.neg{color:var(--short);}
+  .tlrun{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;min-width:64px;}
+  .tlrun b.pos{color:var(--long);} .tlrun b.neg{color:var(--short);}
+  .tlhead{display:grid;grid-template-columns:56px 1fr auto auto;gap:9px;padding:0 10px 6px;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+  .tlhead span:nth-child(3),.tlhead span:nth-child(4){text-align:right;}
 </style>
 </head>
 <body>
@@ -312,6 +323,13 @@
     <div class="hint">Paste each week's Tradovate <b>Performance</b> numbers here. Recommendations are rule-based, tied to your v5 parameters — read them as analysis to test, not advice. Change one parameter at a time and re-measure.</div>
   </div>
 
+  <!-- 8 timeline -->
+  <div class="card">
+    <div class="eyebrow"><span class="no">08</span> Timeline <span class="ln"></span></div>
+    <div id="timeline"></div>
+    <div class="hint">Every logged trade in time order — when it happened, the result, and your running P&amp;L through the day.</div>
+  </div>
+
   <div class="foot">
     Mirrors the v5 risk engine (ATR stops · size = max 1, floor(risk ÷ 1-lot) · 25/50/25 scale-out at 1R/2R/3.5R).
     Scale-out dollars are a planning estimate — micros exit in whole contracts. Not financial advice.
@@ -332,12 +350,12 @@ const MKT_FIELDS=[
   ["buy","Buy share %",57],
 ];
 const RISK_FIELDS=[
-  ["maxRisk","Max $ risk",50],["cap","Skip cap ×",2.0],
+  ["maxRisk","Max $ risk",100],["cap","Skip cap ×",2],
   ["fixedTicks","Fixed stop ticks",72],["atrMult","ATR stop ×",1.20],
   ["buffer","Buffer ticks",2],
-  ["ptpR","PTP R",1.0],["ptpPct","PTP %",25],
-  ["tp1R","TP1 R",2.0],["tp1Pct","TP1 %",50],
-  ["fullR","Full R",3.5],
+  ["ptpR","PTP R",""],["ptpPct","PTP %",0],
+  ["tp1R","TP1 R",1],["tp1Pct","TP1 %",50],
+  ["fullR","Full R",2],
 ];
 const STOP_MODES=["Past swept extreme","ATR multiple","Fixed ticks"];
 
@@ -356,8 +374,8 @@ let S={
     exitMode:"Scaled", ptpQ:1, ptpPx:null, tp1Q:2, tp1Px:null, runQ:1, runPx:6800,
     flags:{bos:true,pressure:true,relvol:true,fvg:false,atrexp:true,absorption:false,barq:true,bias:true,retest:false},
     note:"PTP+TP1 hit, runner stopped at BE", _open:true}],
-  relay:"",
-  live:false,
+  relay:"https://v5relay.658d5vgbms.workers.dev",
+  live:true,
   perf:{trades:11, wins:3, losses:8, gwin:209.75, gloss:587.25, lwin:173.50, lloss:273.50, wmin:7.4, lmin:84.4, fees:20.90, am:null, pm:null},
 };
 
@@ -765,7 +783,33 @@ function renderJournal(){
   }).join("");
   updateTotals();
 }
-function renderAll(){renderTop();renderReads();renderDerived();renderSetups();renderWhatif();renderJournal();renderPerf();save();}
+function minutesOf(s){const h=hourOf(s);if(h===null)return null;const m=(""+s).match(/\d{1,2}:(\d{2})/);const mm=m?parseInt(m[1],10):0;return h*60+mm;}
+function renderTimeline(){
+  const host=document.getElementById("timeline"); if(!host)return;
+  const items=S.journal.map((t,i)=>({t,A:analyzeTrade(t),mins:minutesOf(t.etime)})).filter(o=>o.A.pnl!==null);
+  items.sort((a,b)=>{
+    if(a.mins===null&&b.mins===null)return 0;
+    if(a.mins===null)return 1; if(b.mins===null)return -1;
+    return a.mins-b.mins;
+  });
+  if(!items.length){ host.innerHTML=`<div class="hint" style="margin-top:0">No completed trades yet — they'll appear here in time order as they close.</div>`; return; }
+  let run=0;
+  const head=`<div class="tlhead"><span>Time</span><span>Trade</span><span>P&amp;L</span><span>Running</span></div>`;
+  const rows=items.map(o=>{
+    run+=o.A.pnl;
+    const t=o.t, long=t.dir==="Long";
+    const time=t.etime?String(t.etime):"—";
+    const runCls=run>=0?"pos":"neg";
+    return `<div class="tlrow">
+      <span class="tltime">${time}</span>
+      <span class="tlsym">${t.sym} <b class="${long?'l':'s'}">${long?'L':'S'}</b><em>${t.mode} · ${t.ref||'Prior-day'}</em></span>
+      <span class="tlpnl ${o.A.pnl>=0?'pos':'neg'}">${money(o.A.pnl)}</span>
+      <span class="tlrun"><b class="${runCls}">${money(run)}</b></span>
+    </div>`;
+  }).join("");
+  host.innerHTML=head+rows;
+}
+function renderAll(){renderTop();renderReads();renderDerived();renderSetups();renderWhatif();renderJournal();renderPerf();renderTimeline();save();}
 
 /* ---------- performance & tuning ---------- */
 const PERF_FIELDS=[
@@ -1098,6 +1142,8 @@ document.body.addEventListener("toggle",e=>{
 /* ---------- boot ---------- */
 (async function(){
   await load();
+  if(!S.relay||!/^https?:\/\//i.test(S.relay)) S.relay="https://v5relay.658d5vgbms.workers.dev"; // baked-in default
+  S.live=true; // always start live on this hosted build
   // set market segment active state after load
   document.querySelectorAll('#mktSeg button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.market));
   document.getElementById("relayUrl").value=S.relay||"";
