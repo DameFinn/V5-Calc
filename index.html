@@ -244,7 +244,7 @@
 <body>
 <div class="top">
   <div class="wrap">
-    <div class="brand"><h1>Pre-Market Terminal</h1><span class="ver">IBLV·A+·v5 · b9</span></div>
+    <div class="brand"><h1>Pre-Market Terminal</h1><span class="ver">IBLV·A+·v5 · b10</span></div>
     <div class="seg" id="mktSeg">
       <button data-m="MES" class="on">MES</button>
       <button data-m="MNQ">MNQ</button>
@@ -318,7 +318,7 @@
 
   <!-- 7 performance & tuning -->
   <div class="card">
-    <div class="eyebrow"><span class="no">07</span> Performance &amp; tuning <span class="ln"></span>
+    <div class="eyebrow"><span class="no">07</span> Performance &amp; tuning <span id="perfMkt" style="color:var(--cyan)"></span> <span class="ln"></span>
       <button id="syncPerf" class="pull">⟳ From journal</button></div>
     <div class="grid" id="perfGrid"></div>
     <div class="jlabel" style="margin-top:13px">Diagnostics</div>
@@ -339,13 +339,13 @@
 
   <!-- 9 backtest -->
   <div class="card">
-    <div class="eyebrow"><span class="no">09</span> Backtest — all logged trades <span class="ln"></span>
+    <div class="eyebrow"><span class="no">09</span> Backtest <span id="btMkt" style="color:var(--cyan)"></span> <span class="ln"></span>
       <button id="exportTrades" class="pull">⤓ Export</button></div>
     <div id="eqcurve"></div>
     <div style="height:10px"></div>
     <div class="mini" id="backtest"></div>
     <div class="pullnote" id="btNote"></div>
-    <div class="hint">Stats &amp; equity curve across your <b>entire logged history</b> (all markets — ignores the tab filter). This analyzes the trades you've logged; it is <b>not</b> a bar-by-bar market re-simulation (that's TradingView's Strategy Tester). <b>Export</b> copies all trades as JSON so you never lose history — paste it into the import box to restore.</div>
+    <div class="hint">Stats &amp; equity curve for the market selected in the Journal tabs (All / MES / MNQ / MGC). This analyzes the trades you've logged; it is <b>not</b> a bar-by-bar market re-simulation (that's TradingView's Strategy Tester). <b>Export</b> copies all trades as JSON so you never lose history — paste it into the import box to restore.</div>
   </div>
 
   <div class="foot">
@@ -704,10 +704,12 @@ function analysisHTML(t){
   }
   return `<div class="gates">${g}</div><div class="why ${A.take?'t':'s'}">${why}</div>${rLevels}${exitBlk}${pnlS}`;
 }
+function inFilter(t){const f=S.journalFilter||"All";return f==="All"||t.sym===f;}
 function journalStats(){
   let trades=0,wins=0,losses=0,gwin=0,gloss=0,lwin=0,lloss=0;
   let wd=[],ld=[],am=0,pm=0,amHas=false,pmHas=false;
   S.journal.forEach(t=>{
+    if(!inFilter(t))return;
     const A=analyzeTrade(t); if(A.pnl===null)return;
     trades++;
     if(A.pnl>0){wins++;gwin+=A.pnl;lwin=Math.max(lwin,A.pnl);}
@@ -726,6 +728,7 @@ function journalStats(){
 function setupStats(){
   const g={};
   S.journal.forEach(t=>{
+    if(!inFilter(t))return;
     const A=analyzeTrade(t); if(A.pnl===null)return;
     const key=(t.mode||"?")+" · "+(t.ref||"Prior-day");
     const o=g[key]||(g[key]={n:0,wins:0,net:0,sumR:0,rn:0});
@@ -736,6 +739,7 @@ function setupStats(){
 function runnerStats(){
   let n=0,full=0,be=0,partial=0,loss=0,sumR=0;
   S.journal.forEach(t=>{
+    if(!inFilter(t))return;
     if(t.exitMode!=="Scaled")return;
     const A=analyzeTrade(t);
     if(A.runnerOutcome===null)return;
@@ -856,8 +860,9 @@ function renderTimeline(){
 }
 function renderBacktest(){
   const host=document.getElementById("backtest"); if(!host)return;
+  const bm=document.getElementById("btMkt"); if(bm)bm.textContent="· "+(S.journalFilter||"All");
   const eq=document.getElementById("eqcurve");
-  const items=S.journal.map(t=>({t,A:analyzeTrade(t),mins:minutesOf(t.etime)})).filter(o=>o.A.pnl!==null);
+  const items=S.journal.map(t=>({t,A:analyzeTrade(t),mins:minutesOf(t.etime)})).filter(o=>o.A.pnl!==null&&inFilter(o.t));
   if(!items.length){ host.innerHTML=`<div class="hint" style="margin:0">No completed trades yet.</div>`; if(eq)eq.innerHTML=""; return; }
   items.sort((a,b)=>{if(a.mins===null&&b.mins===null)return 0;if(a.mins===null)return 1;if(b.mins===null)return -1;return a.mins-b.mins;});
   let n=items.length,wins=0,losses=0,gw=0,gl=0,sumR=0,rn=0,best=-1e9,worst=1e9,net=0,peak=0,maxDD=0,run=0;
@@ -916,6 +921,7 @@ function perfDiag(){
 }
 function renderPerf(){
   const host=document.getElementById("perfScore"); if(!host)return;
+  const pm=document.getElementById("perfMkt"); if(pm)pm.textContent="· "+(S.journalFilter||"All");
   const d=perfDiag();
   const pct=v=>v===null?"—":(v*100).toFixed(0)+"%";
   const x=v=>v===null?"—":v.toFixed(2);
@@ -1188,7 +1194,7 @@ document.body.addEventListener("click",e=>{
   if(e.target.id==="addJ"){S.journal.unshift({sym:S.market,dir:"Long",mode:"Reversal",entry:null,swept:null,level:null,exit:null,ct:1,atr:num(S.mkt.atr),flags:{},note:"",_open:true});renderJournal();save();return;}
   if(e.target.id==="pullBtn"){pullLevels();return;}
   const mf=e.target.closest("#jFilter button[data-mf]");
-  if(mf){S.journalFilter=mf.dataset.mf;renderJournal();renderTimeline();save();return;}
+  if(mf){S.journalFilter=mf.dataset.mf;renderJournal();renderTimeline();renderPerf();renderBacktest();save();return;}
   if(e.target.id==="liveBtn"){setLive(!S.live);return;}
   if(e.target.id==="exportTrades"){
     const data=JSON.stringify({levels:{},trades:S.journal});
@@ -1237,4 +1243,5 @@ document.body.addEventListener("toggle",e=>{
 </script>
 </body>
 </html>
+
 
