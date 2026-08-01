@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Pre-Market Terminal</title>
+<title>Doji Pullback Terminal</title>
 <style>
   :root{
     --ink:#0A111C; --ink2:#0E1726; --panel:#131F30; --panel2:#182740;
@@ -15,182 +15,104 @@
     --short:#FF5C6C; --short-dim:#3D1A20;
     --warn:#F5A623; --warn-dim:#3A2C10;
     --cyan:#4FB6E8; --cyan-dim:#14324A;
-    --mono:ui-monospace,"SF Mono",Menlo,Monaco,"Cascadia Code",monospace;
+    --mono:ui-monospace,"SF Mono",Menlo,Monaco,monospace;
     --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;background:var(--ink);color:var(--text);font-family:var(--sans);
-    font-size:15px;line-height:1.4;-webkit-font-smoothing:antialiased;}
+  html,body{margin:0;padding:0;background:var(--ink);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.4;-webkit-font-smoothing:antialiased;}
   body{padding-bottom:64px;}
   .wrap{max-width:560px;margin:0 auto;padding:0 14px;}
-
-  /* sticky header */
-  .top{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,var(--ink) 70%,rgba(10,17,28,.85));
-    padding:12px 0 10px;backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+  .top{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,var(--ink) 70%,rgba(10,17,28,.85));padding:12px 0 10px;backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
   .brand{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;}
-  .brand h1{font-size:15px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin:0;color:var(--text);}
-  .brand .ver{font-family:var(--mono);font-size:11px;color:var(--cyan);letter-spacing:.05em;}
+  .brand h1{font-size:14px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;margin:0;}
+  .brand .ver{font-family:var(--mono);font-size:11px;color:var(--cyan);}
   .seg{display:flex;gap:6px;}
-  .seg button{flex:1;font-family:var(--mono);font-weight:600;font-size:15px;letter-spacing:.05em;
-    padding:11px 0;border:1px solid var(--line2);background:var(--panel);color:var(--muted);
-    border-radius:11px;transition:all .15s;}
+  .seg button{flex:1;font-family:var(--mono);font-weight:600;font-size:15px;padding:11px 0;border:1px solid var(--line2);background:var(--panel);color:var(--muted);border-radius:11px;transition:all .15s;}
   .seg button.on{background:var(--cyan-dim);border-color:var(--cyan);color:#CFEFFF;box-shadow:0 0 0 1px var(--cyan) inset;}
   .chips{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap;}
-  .chip{font-family:var(--mono);font-size:11.5px;padding:5px 9px;border-radius:20px;border:1px solid var(--line2);
-    background:var(--panel);color:var(--muted);letter-spacing:.02em;white-space:nowrap;}
-  .chip b{color:var(--text);font-weight:600;}
+  .chip{font-family:var(--mono);font-size:11.5px;padding:5px 9px;border-radius:20px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);white-space:nowrap;}
+  .chip b{color:var(--text);}
   .chip.long{border-color:var(--long);color:var(--long);background:var(--long-dim);}
   .chip.short{border-color:var(--short);color:var(--short);background:var(--short-dim);}
   .chip.warn{border-color:var(--warn);color:var(--warn);background:var(--warn-dim);}
   .chip.cyan{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-dim);}
-
-  /* sections */
   .card{background:var(--ink2);border:1px solid var(--line);border-radius:16px;padding:14px;margin:14px 0;}
-  .eyebrow{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;
-    text-transform:uppercase;color:var(--dim);margin:0 0 12px;}
+  .eyebrow{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin:0 0 12px;}
   .eyebrow .no{color:var(--cyan);font-weight:700;}
   .eyebrow .ln{flex:1;height:1px;background:var(--line);}
-
-  /* field grid */
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
-  .grid.one{grid-template-columns:1fr;}
   .f{display:flex;flex-direction:column;gap:4px;}
-  .f label{font-size:11px;color:var(--muted);letter-spacing:.02em;padding-left:2px;}
-  .f input{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--text);
-    background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:11px 12px;width:100%;
-    transition:border-color .15s;}
+  .f label{font-size:11px;color:var(--muted);padding-left:2px;}
+  .f input,.f select{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--text);background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:11px 12px;width:100%;}
   .f input:focus{outline:none;border-color:var(--cyan);}
-  .f input::placeholder{color:var(--dim);font-weight:400;}
-
-  /* readouts */
   .reads{display:flex;flex-direction:column;gap:9px;}
-  .read{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;background:var(--panel);
-    border:1px solid var(--line);}
-  .read .k{font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;min-width:78px;}
-  .read .v{font-family:var(--mono);font-size:13.5px;font-weight:600;flex:1;}
+  .read{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;background:var(--panel);border:1px solid var(--line);}
+  .read .k{font-size:11px;color:var(--muted);text-transform:uppercase;min-width:74px;}
+  .read .v{font-family:var(--mono);font-size:13px;font-weight:600;flex:1;}
   .v.long{color:var(--long);} .v.short{color:var(--short);} .v.warn{color:var(--warn);} .v.neutral{color:var(--muted);}
-
-  /* derived mini table */
   .mini{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;}
-  .mini .row{display:flex;justify-content:space-between;align-items:baseline;
-    border-bottom:1px dotted var(--line);padding:6px 0;}
+  .mini .row{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px dotted var(--line);padding:6px 0;}
   .mini .row span{font-size:11.5px;color:var(--muted);}
-  .mini .row b{font-family:var(--mono);font-size:13px;color:var(--text);font-weight:600;}
-
-  /* risk levers collapsible */
+  .mini .row b{font-family:var(--mono);font-size:13px;font-weight:600;}
+  .mini .row b.pos{color:var(--long);} .mini .row b.neg{color:var(--short);}
   details.lev{background:var(--ink2);border:1px solid var(--line);border-radius:16px;margin:14px 0;overflow:hidden;}
-  details.lev>summary{list-style:none;cursor:pointer;padding:14px;display:flex;align-items:center;gap:8px;
-    font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);}
+  details.lev>summary{list-style:none;cursor:pointer;padding:14px;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);}
   details.lev>summary::-webkit-details-marker{display:none;}
   details.lev>summary .no{color:var(--cyan);font-weight:700;}
-  details.lev>summary .tw{margin-left:auto;color:var(--muted);transition:transform .2s;font-size:14px;}
-  details.lev[open]>summary .tw{transform:rotate(180deg);}
+  details.lev>summary .tw{margin-left:auto;color:var(--muted);}
   .lev .body{padding:0 14px 14px;}
-
-  /* setup card */
-  .setup{background:var(--ink2);border:1px solid var(--line);border-radius:16px;padding:13px;margin:12px 0;
-    transition:border-color .2s;}
+  .toggles{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px;}
+  .tg{font-family:var(--mono);font-size:11.5px;padding:6px 10px;border-radius:16px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);}
+  .tg.on{background:var(--cyan-dim);border-color:var(--cyan);color:#CFEFFF;}
+  .setup{background:var(--ink2);border:1px solid var(--line);border-radius:16px;padding:13px;margin:12px 0;}
   .setup.take{border-color:var(--long-dim);} .setup.skip{border-color:var(--warn-dim);}
-  .setup .sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;}
-  .setup .sh .name{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
-  .stamp{font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.12em;padding:5px 11px;border-radius:8px;
-    border:1px solid var(--line2);color:var(--dim);}
+  .sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;}
+  .sh .name{font-family:var(--mono);font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);}
+  .stamp{font-family:var(--mono);font-weight:700;font-size:12px;padding:5px 11px;border-radius:8px;border:1px solid var(--line2);color:var(--dim);}
   .stamp.take{color:var(--long);border-color:var(--long);background:var(--long-dim);}
   .stamp.skip{color:var(--warn);border-color:var(--warn);background:var(--warn-dim);}
   .dirtog{display:flex;gap:6px;margin-bottom:9px;}
-  .dirtog button{flex:1;font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:.08em;padding:9px 0;
-    border-radius:9px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);transition:all .15s;}
+  .dirtog button{flex:1;font-family:var(--mono);font-weight:600;font-size:13px;padding:9px 0;border-radius:9px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);}
   .dirtog button.onL{background:var(--long-dim);border-color:var(--long);color:var(--long);}
   .dirtog button.onS{background:var(--short-dim);border-color:var(--short);color:var(--short);}
   .res{margin-top:11px;border-top:1px solid var(--line);padding-top:11px;}
-  .res.hide{display:none;}
   .resgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px 10px;margin-bottom:11px;}
   .cell{display:flex;flex-direction:column;gap:2px;}
-  .cell .cl{font-size:10px;color:var(--muted);letter-spacing:.03em;text-transform:uppercase;}
-  .cell .cv{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);}
+  .cell .cl{font-size:10px;color:var(--muted);text-transform:uppercase;}
+  .cell .cv{font-family:var(--mono);font-size:14px;font-weight:600;}
   .cell .cv.sm{font-size:12.5px;}
-
-  /* outcome strip */
   .out{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;}
   .oc{border-radius:10px;padding:9px 8px;text-align:center;border:1px solid var(--line);background:var(--panel);}
-  .oc .ol{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;line-height:1.2;}
+  .oc .ol{font-size:9.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
   .oc .ov{font-family:var(--mono);font-size:15px;font-weight:700;}
   .oc.win{background:var(--long-dim);border-color:var(--long);} .oc.win .ov{color:var(--long);}
   .oc.be{background:var(--warn-dim);border-color:var(--warn);} .oc.be .ov{color:var(--warn);}
   .oc.loss{background:var(--short-dim);border-color:var(--short);} .oc.loss .ov{color:var(--short);}
-  .rrbar{display:flex;height:6px;border-radius:4px;overflow:hidden;margin-top:9px;background:var(--panel);}
-  .rrbar .risk{background:var(--short);} .rrbar .rew{background:var(--long);}
-  .swb{font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.02em;padding:8px 11px;
-    border-radius:9px;margin-top:10px;border:1px solid var(--line);text-align:center;}
-  .swb.valid{color:var(--long);background:var(--long-dim);border-color:var(--long);}
-  .swb.shallow{color:var(--warn);background:var(--warn-dim);border-color:var(--warn);}
-  .swb.nosweep{color:var(--short);background:var(--short-dim);border-color:var(--short);}
-
-  /* whatif */
   table.wi{width:100%;border-collapse:collapse;font-family:var(--mono);}
   table.wi th,table.wi td{padding:8px 5px;text-align:right;font-size:12px;border-bottom:1px solid var(--line);}
-  table.wi th{color:var(--muted);font-weight:600;font-size:10px;letter-spacing:.04em;text-transform:uppercase;}
+  table.wi th{color:var(--muted);font-size:10px;text-transform:uppercase;}
   table.wi td:first-child,table.wi th:first-child{text-align:left;color:var(--text);font-weight:700;}
   table.wi tr.on td{background:var(--cyan-dim);}
   .hint{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:10px;}
-  .pull{font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--cyan);background:var(--cyan-dim);
-    border:1px solid var(--cyan);border-radius:8px;padding:6px 11px;white-space:nowrap;font-weight:600;}
-  .pull:disabled{opacity:.55;}
+  .pull{font-family:var(--mono);font-size:11px;color:var(--cyan);background:var(--cyan-dim);border:1px solid var(--cyan);border-radius:8px;padding:6px 11px;font-weight:600;white-space:nowrap;}
   .pull.on{color:var(--long);border-color:var(--long);background:var(--long-dim);}
   .pullnote{font-size:11px;line-height:1.5;margin-top:11px;color:var(--muted);}
   .pullnote.err{color:var(--short);}
-  .pullnote b{color:var(--text);}
-  .relayin{width:100%;font-family:var(--mono);font-size:12px;color:var(--text);background:var(--panel);
-    border:1px solid var(--line2);border-radius:9px;padding:9px 11px;margin-bottom:11px;}
-  .relayin:focus{outline:none;border-color:var(--cyan);}
-  .relayin::placeholder{color:var(--dim);}
-  details.imp{margin-bottom:11px;}
-  details.imp>summary{list-style:none;cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--cyan);padding:2px 0 8px;}
-  details.imp>summary::-webkit-details-marker{display:none;}
-  #jsonIn{width:100%;min-height:96px;font-family:var(--mono);font-size:11.5px;color:var(--text);background:var(--panel);border:1px solid var(--line2);border-radius:9px;padding:9px;margin-bottom:8px;resize:vertical;}
-  #jsonIn:focus{outline:none;border-color:var(--cyan);}
-
-  /* log */
-  .logrow{display:grid;grid-template-columns:1.1fr .7fr .8fr .8fr .5fr 34px;gap:5px;align-items:center;margin-bottom:6px;}
-  .logrow input,.logrow .lsel{font-family:var(--mono);font-size:12.5px;background:var(--panel);border:1px solid var(--line2);
-    border-radius:8px;padding:8px 6px;color:var(--text);width:100%;text-align:center;}
-  .lsel{color:var(--muted);}.lsel.L{color:var(--long);}.lsel.S{color:var(--short);}
-  .del{background:var(--short-dim);border:1px solid var(--short);color:var(--short);border-radius:8px;padding:8px 0;font-weight:700;}
-  .addbtn{width:100%;padding:11px;border-radius:11px;background:var(--panel2);border:1px dashed var(--line2);
-    color:var(--cyan);font-family:var(--mono);font-size:13px;letter-spacing:.06em;margin-top:4px;}
-  .logtot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);}
-  .logtot .lt{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
-  .logtot .lv{font-family:var(--mono);font-size:20px;font-weight:700;}
-  .status{margin-top:9px;display:flex;gap:7px;flex-wrap:wrap;}
-
-  .foot{text-align:center;font-size:11px;color:var(--dim);line-height:1.6;padding:18px 6px 4px;}
-  .colhead{display:grid;grid-template-columns:1.1fr .7fr .8fr .8fr .5fr 34px;gap:5px;margin-bottom:6px;}
-  .colhead span{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;text-align:center;}
-  .colhead span:first-child{text-align:left;}
+  .relayin{width:100%;font-family:var(--mono);font-size:12px;color:var(--text);background:var(--panel);border:1px solid var(--line2);border-radius:9px;padding:9px 11px;margin-bottom:11px;}
   .jcard{background:var(--ink2);border:1px solid var(--line);border-radius:14px;margin:10px 0;overflow:hidden;}
   .jcard>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:12px 13px;flex-wrap:wrap;}
   .jcard>summary::-webkit-details-marker{display:none;}
-  .jh{font-family:var(--mono);font-size:13px;color:var(--text);font-weight:600;}
+  .jh{font-family:var(--mono);font-size:12.5px;font-weight:600;}
   .jh b.cl{color:var(--long);} .jh b.cs{color:var(--short);}
-  .jscore{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--line2);border-radius:6px;padding:2px 6px;}
-  .jverd{font-family:var(--mono);font-weight:700;font-size:11px;letter-spacing:.07em;padding:3px 8px;border-radius:6px;}
+  .jverd{font-family:var(--mono);font-weight:700;font-size:11px;padding:3px 8px;border-radius:6px;}
   .jverd.t{color:var(--long);background:var(--long-dim);border:1px solid var(--long);}
   .jverd.s{color:var(--warn);background:var(--warn-dim);border:1px solid var(--warn);}
   .jpnl{font-family:var(--mono);font-size:13px;font-weight:700;margin-left:auto;}
   .jpnl.pos{color:var(--long);} .jpnl.neg{color:var(--short);}
   .jbody{padding:12px 13px 13px;border-top:1px solid var(--line);}
-  .jtoggles{display:flex;gap:8px;margin-bottom:11px;}
-  .jseg{display:flex;gap:5px;flex:1;}
-  .jseg button{flex:1;font-family:var(--mono);font-size:11.5px;font-weight:600;padding:8px 0;border-radius:8px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);}
-  .jseg button.on{background:var(--cyan-dim);border-color:var(--cyan);color:#CFEFFF;}
-  .jseg button.onL{background:var(--long-dim);border-color:var(--long);color:var(--long);}
-  .jseg button.onS{background:var(--short-dim);border-color:var(--short);color:var(--short);}
   .jgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
   .jsel{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);background:var(--panel);border:1px solid var(--line2);border-radius:9px;padding:9px 10px;width:100%;}
   .jlabel{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;}
-  .jflags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:13px;}
-  .jflag{font-family:var(--mono);font-size:11.5px;padding:6px 10px;border-radius:16px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);}
-  .jflag.on{background:var(--cyan-dim);border-color:var(--cyan);color:#CFEFFF;}
   .gates{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
   .gate{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:12px;padding:6px 9px;border-radius:8px;background:var(--panel);border:1px solid var(--line);}
   .gate.ok span{color:var(--long);} .gate.no span{color:var(--short);}
@@ -200,10 +122,26 @@
   .why.s{color:var(--warn);background:var(--warn-dim);border:1px solid var(--warn);}
   .jpl{font-family:var(--mono);font-size:13px;font-weight:700;}
   .jpl.pos{color:var(--long);} .jpl.neg{color:var(--short);}
-  .jdel{width:100%;margin-top:12px;}
+  .del{background:var(--short-dim);border:1px solid var(--short);color:var(--short);border-radius:8px;padding:8px 0;font-weight:700;width:100%;margin-top:12px;}
+  .addbtn{width:100%;padding:11px;border-radius:11px;background:var(--panel2);border:1px dashed var(--line2);color:var(--cyan);font-family:var(--mono);font-size:13px;margin-top:4px;}
   .jtot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:13px;border-top:1px solid var(--line);}
-  .jtot .lt{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+  .jtot .lt{font-size:11px;color:var(--muted);text-transform:uppercase;}
   .jtot .lv{font-family:var(--mono);font-size:20px;font-weight:700;}
+  .status{margin-top:9px;display:flex;gap:7px;flex-wrap:wrap;}
+  .jfilter{margin-bottom:12px;}
+  .jfilter button{flex:1;font-family:var(--mono);font-size:12px;font-weight:600;padding:8px 0;border-radius:8px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);}
+  .jfilter button.on{background:var(--cyan-dim);border-color:var(--cyan);color:#CFEFFF;}
+  .tlrow{display:grid;grid-template-columns:56px 1fr auto auto;gap:9px;align-items:center;padding:9px 10px;border-radius:10px;background:var(--panel);border:1px solid var(--line);margin-bottom:7px;}
+  .tltime{font-family:var(--mono);font-size:12px;color:var(--muted);}
+  .tlsym{font-family:var(--mono);font-size:12.5px;}
+  .tlsym b.l{color:var(--long);} .tlsym b.s{color:var(--short);}
+  .tlsym em{font-style:normal;color:var(--muted);font-size:10.5px;display:block;}
+  .tlpnl{font-family:var(--mono);font-size:13px;font-weight:700;text-align:right;}
+  .tlpnl.pos{color:var(--long);} .tlpnl.neg{color:var(--short);}
+  .tlrun{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;min-width:64px;}
+  .tlrun b.pos{color:var(--long);} .tlrun b.neg{color:var(--short);}
+  .tlhead{display:grid;grid-template-columns:56px 1fr auto auto;gap:9px;padding:0 10px 6px;font-size:9.5px;text-transform:uppercase;color:var(--muted);}
+  .tlhead span:nth-child(3),.tlhead span:nth-child(4){text-align:right;}
   .rec{border-radius:11px;padding:11px 12px;margin-bottom:9px;border:1px solid var(--line);background:var(--panel);}
   .rec .rt{font-weight:700;font-size:13px;margin-bottom:4px;}
   .rec .rb{font-size:12px;color:var(--muted);line-height:1.55;}
@@ -211,40 +149,13 @@
   .rec.med{border-color:var(--warn);background:var(--warn-dim);} .rec.med .rt{color:var(--warn);}
   .rec.info{border-color:var(--cyan);background:var(--cyan-dim);} .rec.info .rt{color:#CFEFFF;}
   .rec.good{border-color:var(--long);background:var(--long-dim);} .rec.good .rt{color:var(--long);}
-  .mini .row b.pos{color:var(--long);} .mini .row b.neg{color:var(--short);}
-  .legwrap{margin-bottom:8px;}
-  .legln{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-bottom:5px;}
-  .legln b{color:var(--text);} .legln b.neg{color:var(--short);}
-  .belock{font-family:var(--mono);font-size:11.5px;padding:9px 11px;border-radius:9px;margin-bottom:8px;border:1px solid var(--long);background:var(--long-dim);color:var(--long);line-height:1.5;}
-  .jseg.jexit button{font-size:11.5px;}
-  .rtag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.03em;padding:4px 9px;border-radius:7px;margin-bottom:8px;}
-  .rtag.good{color:var(--long);background:var(--long-dim);border:1px solid var(--long);}
-  .rtag.med{color:var(--warn);background:var(--warn-dim);border:1px solid var(--warn);}
-  .rtag.info{color:#CFEFFF;background:var(--cyan-dim);border:1px solid var(--cyan);}
-  .rtag.high{color:var(--short);background:var(--short-dim);border:1px solid var(--short);}
-  .tlrow{display:grid;grid-template-columns:56px 1fr auto auto;gap:9px;align-items:center;padding:9px 10px;border-radius:10px;background:var(--panel);border:1px solid var(--line);margin-bottom:7px;}
-  .tltime{font-family:var(--mono);font-size:12px;color:var(--muted);}
-  .tlsym{font-family:var(--mono);font-size:12.5px;color:var(--text);}
-  .tlsym b.l{color:var(--long);} .tlsym b.s{color:var(--short);}
-  .tlsym em{font-style:normal;color:var(--muted);font-size:10.5px;display:block;}
-  .tlpnl{font-family:var(--mono);font-size:13px;font-weight:700;text-align:right;}
-  .tlpnl.pos{color:var(--long);} .tlpnl.neg{color:var(--short);}
-  .tlrun{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;min-width:64px;}
-  .tlrun b.pos{color:var(--long);} .tlrun b.neg{color:var(--short);}
-  .tlhead{display:grid;grid-template-columns:56px 1fr auto auto;gap:9px;padding:0 10px 6px;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
-  .tlhead span:nth-child(3),.tlhead span:nth-child(4){text-align:right;}
-  .rlvls{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
-  .rlvl{font-family:var(--mono);font-size:11px;padding:5px 9px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);}
-  .rlvl.hit{color:var(--long);border-color:var(--long);background:var(--long-dim);}
-  .jfilter{margin-bottom:12px;}
-  .jfilter button{flex:1;font-family:var(--mono);font-size:12px;font-weight:600;padding:8px 0;border-radius:8px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);}
-  .jfilter button.on{background:var(--cyan-dim);border-color:var(--cyan);color:#CFEFFF;}
+  .foot{text-align:center;font-size:11px;color:var(--dim);line-height:1.6;padding:18px 6px 4px;}
 </style>
 </head>
 <body>
 <div class="top">
   <div class="wrap">
-    <div class="brand"><h1>Pre-Market Terminal</h1><span class="ver">IBLV·A+·v5 · b10</span></div>
+    <div class="brand"><h1>Doji Pullback Terminal</h1><span class="ver">100EMA · adaptive d2</span></div>
     <div class="seg" id="mktSeg">
       <button data-m="MES" class="on">MES</button>
       <button data-m="MNQ">MNQ</button>
@@ -256,88 +167,73 @@
 
 <div class="wrap">
 
-  <!-- 1 market inputs -->
   <div class="card">
     <div class="eyebrow"><span class="no">01</span> Market inputs <span class="ln"></span>
       <button id="liveBtn" class="pull">● Live</button>
-      <button id="pullBtn" class="pull">⟳ Pull today</button></div>
-    <input id="relayUrl" class="relayin" placeholder="Relay URL (optional) — your TradingView → relay endpoint">
+      <button id="pullBtn" class="pull">⟳ Pull</button></div>
+    <input id="relayUrl" class="relayin" placeholder="Relay URL (optional)">
     <div class="pullnote" id="liveNote"></div>
-    <details class="imp"><summary>Paste JSON to import (levels + trades)</summary>
-      <textarea id="jsonIn" placeholder='{"levels":{"sym":"MES","pdh":6820,...},"trades":[{"id":"t1","dir":"Long",...}]}'></textarea>
-      <button id="jsonApply" class="pull" style="width:100%">Apply JSON</button>
-      <div class="pullnote" id="jsonNote"></div>
-    </details>
     <div class="grid" id="mktGrid"></div>
     <div class="pullnote" id="pullNote"></div>
   </div>
 
-  <!-- 2 read -->
   <div class="card">
-    <div class="eyebrow"><span class="no">02</span> Trend &amp; strength <span class="ln"></span></div>
+    <div class="eyebrow"><span class="no">02</span> Trend &amp; setup context <span class="ln"></span></div>
     <div class="reads">
-      <div class="read"><span class="k">Bias</span><span class="v neutral" id="rBias">—</span></div>
-      <div class="read"><span class="k">Location</span><span class="v neutral" id="rLoc">—</span></div>
-      <div class="read"><span class="k">Strength</span><span class="v neutral" id="rStr">—</span></div>
+      <div class="read"><span class="k">EMA side</span><span class="v neutral" id="rSide">—</span></div>
+      <div class="read"><span class="k">HTF</span><span class="v neutral" id="rHtf">—</span></div>
+      <div class="read"><span class="k">Slope</span><span class="v neutral" id="rSlope">—</span></div>
+      <div class="read"><span class="k">Volume</span><span class="v neutral" id="rVol">—</span></div>
     </div>
     <div style="height:12px"></div>
     <div class="mini" id="derived"></div>
   </div>
 
-  <!-- 3 risk levers -->
   <details class="lev">
     <summary><span class="no">03</span> Risk &amp; exit levers <span class="tw">▾</span></summary>
-    <div class="body"><div class="grid" id="riskGrid"></div></div>
+    <div class="body">
+      <div class="jlabel">Strategy toggles</div>
+      <div class="toggles" id="optToggles"></div>
+      <div class="grid" id="riskGrid"></div>
+    </div>
   </details>
 
-  <!-- 4 setups -->
-  <div class="eyebrow" style="margin:20px 2px 2px"><span class="no">04</span> Trade setups — max 4/day <span class="ln"></span></div>
+  <div class="eyebrow" style="margin:20px 2px 2px"><span class="no">04</span> Trade setups <span class="ln"></span></div>
   <div id="setups"></div>
 
-  <!-- 5 whatif -->
   <div class="card">
-    <div class="eyebrow"><span class="no">05</span> Max stop that still takes <span class="ln"></span></div>
+    <div class="eyebrow"><span class="no">05</span> Stop-distance window <span class="ln"></span></div>
     <table class="wi" id="wiTable">
-      <thead><tr><th>Sym</th><th>Stop pts</th><th>Ticks</th><th>Max ATR</th><th>2+ ct pts</th></tr></thead>
+      <thead><tr><th>Sym</th><th>Min stop</th><th>Max stop</th><th>1 ct risk</th><th>Ct @ risk</th></tr></thead>
       <tbody id="wiBody"></tbody>
     </table>
-    <div class="hint">If the stop your setup needs is wider than <b>Stop pts</b>, the engine skips it. Under <b>2+ ct pts</b> you size into more than one contract. Recomputes with your levers above.</div>
+    <div class="hint">The strategy <b>skips</b> any setup whose stop is outside min/max ATR bounds. Sizing = (equity × risk%) ÷ (stop × point value).</div>
   </div>
 
-  <!-- 6 journal -->
   <div class="card">
-    <div class="eyebrow"><span class="no">06</span> Trade journal &amp; why-analysis <span class="ln"></span></div>
-    <div class="jseg jfilter" id="jFilter"><button data-mf="All" class="on">All</button><button data-mf="MES">MES</button><button data-mf="MNQ">MNQ</button><button data-mf="MGC">MGC</button></div>
+    <div class="eyebrow"><span class="no">06</span> Trade journal <span class="ln"></span></div>
+    <div class="seg jfilter" id="jFilter"><button data-mf="All" class="on">All</button><button data-mf="MES">MES</button><button data-mf="MNQ">MNQ</button><button data-mf="MGC">MGC</button></div>
     <div id="jRows"></div>
-    <button class="addbtn" id="addJ">+ Add trade to analyze</button>
-    <div class="jtot"><span class="lt">Total realized</span><span class="lv" id="jTotal">$0.00</span></div>
+    <button class="addbtn" id="addJ">+ Add trade</button>
+    <div class="jtot"><span class="lt">Realized</span><span class="lv" id="jTotal">$0.00</span></div>
     <div class="status" id="jStatus"></div>
-    <div class="status" id="jRunner"></div>
-    <div class="hint">Each card replays your v5 entry gates. The app can't see volume, pivots or FVGs, so you tap the confirmations that were true; the sweep depth, bias, score and risk are computed. This audits <b>why a trade qualified</b> — it doesn't replace TradingView's Strategy Tester over full history.</div>
+    <div class="hint">Each card replays the strategy's entry gates. Tap the chart observations that were true; EMA side, stop bounds, sizing and P&amp;L are computed.</div>
   </div>
 
-  <!-- 7 performance & tuning -->
   <div class="card">
-    <div class="eyebrow"><span class="no">07</span> Performance &amp; tuning <span id="perfMkt" style="color:var(--cyan)"></span> <span class="ln"></span>
-      <button id="syncPerf" class="pull">⟳ From journal</button></div>
-    <div class="grid" id="perfGrid"></div>
-    <div class="jlabel" style="margin-top:13px">Diagnostics</div>
+    <div class="eyebrow"><span class="no">07</span> Performance <span id="perfMkt" style="color:var(--cyan)"></span> <span class="ln"></span></div>
     <div class="mini" id="perfScore"></div>
-    <div class="jlabel" style="margin-top:14px">By setup type</div>
-    <div id="perfSetups"></div>
-    <div class="jlabel" style="margin-top:14px">Tuning to cut losses &amp; grow gains</div>
+    <div class="jlabel" style="margin-top:14px">By exit reason</div>
+    <div id="perfExits"></div>
+    <div class="jlabel" style="margin-top:14px">Tuning</div>
     <div id="perfRecs"></div>
-    <div class="hint">Paste each week's Tradovate <b>Performance</b> numbers here. Recommendations are rule-based, tied to your v5 parameters — read them as analysis to test, not advice. Change one parameter at a time and re-measure.</div>
   </div>
 
-  <!-- 8 timeline -->
   <div class="card">
     <div class="eyebrow"><span class="no">08</span> Timeline <span class="ln"></span></div>
     <div id="timeline"></div>
-    <div class="hint">Every logged trade in time order — when it happened, the result, and your running P&amp;L through the day.</div>
   </div>
 
-  <!-- 9 backtest -->
   <div class="card">
     <div class="eyebrow"><span class="no">09</span> Backtest <span id="btMkt" style="color:var(--cyan)"></span> <span class="ln"></span>
       <button id="exportTrades" class="pull">⤓ Export</button></div>
@@ -345,903 +241,512 @@
     <div style="height:10px"></div>
     <div class="mini" id="backtest"></div>
     <div class="pullnote" id="btNote"></div>
-    <div class="hint">Stats &amp; equity curve for the market selected in the Journal tabs (All / MES / MNQ / MGC). This analyzes the trades you've logged; it is <b>not</b> a bar-by-bar market re-simulation (that's TradingView's Strategy Tester). <b>Export</b> copies all trades as JSON so you never lose history — paste it into the import box to restore.</div>
+    <div class="hint">Stats &amp; equity curve for the selected market. Analyzes your logged trades — not a bar-by-bar re-simulation (that's TradingView's Strategy Tester).</div>
   </div>
 
   <div class="foot">
-    Mirrors the v5 risk engine (ATR stops · size = max 1, floor(risk ÷ 1-lot) · 25/50/25 scale-out at 1R/2R/3.5R).
-    Scale-out dollars are a planning estimate — micros exit in whole contracts. Not financial advice.
+    Mirrors 100 EMA Doji Pullback (adaptive): per-market presets, stop = wick ± ATR buffer,
+    size = floor(equity × risk% ÷ stop$) capped at max contracts, single TP at R:R,
+    optional BE / trail / time / session-end exit. Not financial advice.
   </div>
 </div>
 
 <script>
 const SPECS={
-  MES:{pv:5, tick:0.25, tv:1.25, sess:"09:30–16:00 ET", dp:2},
-  MNQ:{pv:2, tick:0.25, tv:0.50, sess:"09:30–16:00 ET", dp:2},
-  MGC:{pv:10,tick:0.10, tv:1.00, sess:"08:20–13:30 ET", dp:2},
+  MES:{pv:5, tick:0.25, sess:"09:30–16:00 ET", dp:2},
+  MNQ:{pv:2, tick:0.25, sess:"09:30–16:00 ET", dp:2},
+  MGC:{pv:10,tick:0.10, sess:"08:20–13:30 ET", dp:2},
 };
 const MKT_FIELDS=[
-  ["pdh","Prior-day High",6820],["pdl","Prior-day Low",6770],
-  ["pdc","Prior Close",6805],["onh","Overnight High",6812],
-  ["onl","Overnight Low",6788],["atr","ATR(14) pts",12],
-  ["ema","4H EMA(50)",6795],["cur","Current price",6802],
-  ["buy","Buy share %",57],
+  ["cur","Current price",6802],["ema","EMA(100)",6795],
+  ["atr","ATR(14) pts",12],["htfEma","HTF EMA(100)",6780],
+  ["emaPrev","EMA n bars ago",6790],["volRatio","Vol ÷ highest(3)",1.1],
 ];
+const PRESETS={
+  MNQ:{rr:1.5, dojiBodyPct:40, wickTol:30, volMult:0.85, useStructure:false,
+       minStopATR:0.20, maxStopATR:4.0, slBufATR:0.20, cooldown:3, maxTradesDay:4,
+       useHTF:true, htfTF:"60", useSlope:true, minEmaDistATR:0.25, session:"0830-1130"},
+  MES:{rr:1.0, dojiBodyPct:30, wickTol:20, volMult:0.95, useStructure:true,
+       minStopATR:0.15, maxStopATR:3.0, slBufATR:0.12, cooldown:0, maxTradesDay:4,
+       useHTF:false, htfTF:"60", useSlope:true, minEmaDistATR:0.20, session:"0830-1130"},
+  MGC:{rr:1.25,dojiBodyPct:35, wickTol:35, volMult:0.80, useStructure:false,
+       minStopATR:0.25, maxStopATR:5.0, slBufATR:0.30, cooldown:2, maxTradesDay:3,
+       useHTF:true, htfTF:"240",useSlope:true, minEmaDistATR:0.30, session:"0720-1300"},
+};
 const RISK_FIELDS=[
-  ["maxRisk","Max $ risk",100],["cap","Skip cap ×",2],
-  ["fixedTicks","Fixed stop ticks",72],["atrMult","ATR stop ×",1.20],
-  ["buffer","Buffer ticks",2],
-  ["ptpR","PTP R",""],["ptpPct","PTP %",0],
-  ["tp1R","TP1 R",1],["tp1Pct","TP1 %",50],
-  ["fullR","Full R",2],
+  ["equity","Account equity $",10000],["riskPct","Risk per trade %",1.0],
+  ["rr","Risk:Reward",1.0],["slBufATR","SL buffer (ATR)",0.1],
+  ["minStopATR","Min stop (ATR)",0.15],["maxStopATR","Max stop (ATR)",4.0],
+  ["beR","Break-even trigger (R)",0.5],["trailATR","Trail distance (ATR)",1.5],
+  ["maxBars","Max bars in trade",20],["minEmaDistATR","Min EMA distance (ATR)",0],
+  ["dojiBodyPct","Max doji body %",35],["volMult","Volume threshold ×",0.9],
+  ["pullbackBars","Min pullback candles",2],["maxTradesDay","Max trades/day (0=∞)",4],
+  ["wickTol","Wick tolerance %",25],["cooldown","Cooldown bars",0],
+  ["fixedQty","Fixed contracts",1],["maxContracts","Max contracts",20],
 ];
-const STOP_MODES=["Past swept extreme","ATR multiple","Fixed ticks"];
+const OPTS=[["usePreset","Market preset"],["forceRR","Force my R:R"],["fixedSize","Fixed contracts"],["allowMinOne","Allow 1 ct min"],
+  ["useHTF","HTF filter"],["useSlope","EMA slope"],["useStructure","Structure"],["matchDoji","Doji color"],
+  ["beOn","Break-even"],["trailOn","Trail"],["timeOn","Time exit"],["useSession","Session limit"]];
+const EXITS=["TP","SL","Breakeven","Trail","Time","Session End","Manual"];
 
 let S={
   market:"MES",
   mkt:Object.fromEntries(MKT_FIELDS.map(f=>[f[0],f[2]])),
   risk:Object.fromEntries(RISK_FIELDS.map(f=>[f[0],f[2]])),
-  stopMode:"Past swept extreme",
-  setups:[
-    {dir:"Long",entry:6800,swept:6785,level:6790},
-    {dir:"Long",entry:null,swept:null,level:null},
-    {dir:"Long",entry:null,swept:null,level:null},
-    {dir:"Long",entry:null,swept:null,level:null},
-  ],
-  journal:[{sym:"MES",dir:"Long",mode:"Reversal",ref:"Overnight",entry:6800,swept:6785,level:6790,ct:1,atr:12,date:"07/27",etime:"09:36",dur:8,
-    exitMode:"Scaled", ptpQ:1, ptpPx:null, tp1Q:2, tp1Px:null, runQ:1, runPx:6800,
-    flags:{bos:true,pressure:true,relvol:true,fvg:false,atrexp:true,absorption:false,barq:true,bias:true,retest:false},
-    note:"PTP+TP1 hit, runner stopped at BE", _open:true}],
-  relay:"https://v5relay.658d5vgbms.workers.dev",
-  live:true,
-  journalFilter:"All",
-  perf:{trades:11, wins:3, losses:8, gwin:209.75, gloss:587.25, lwin:173.50, lloss:273.50, wmin:7.4, lmin:84.4, fees:20.90, am:null, pm:null},
+  opts:{usePreset:true,forceRR:false,fixedSize:false,allowMinOne:true,useHTF:false,useSlope:true,useStructure:false,matchDoji:false,beOn:false,trailOn:false,timeOn:false,useSession:true},
+  setups:[{dir:"Long",entry:6800,wick:6788},{dir:"Long",entry:null,wick:null},{dir:"Long",entry:null,wick:null},{dir:"Long",entry:null,wick:null}],
+  journal:[{sym:"MES",dir:"Long",entry:6800,wick:6788,atr:12,date:"07/30",etime:"10:15",dur:14,ct:1,exit:6812,exitReason:"TP",
+    flags:{doji:true,pullback:true,volume:true,htf:true,slope:true,structure:false},note:"clean pullback to EMA",_open:true}],
+  relay:"", live:false, journalFilter:"All",
 };
 
-/* ---------- persistence (sanctioned window.storage, optional) ---------- */
-async function save(){
-  try{ if(window.storage) await window.storage.set("pmt_state",JSON.stringify(S),false); }catch(e){}
-}
-async function load(){
-  try{
-    if(window.storage){
-      const r=await window.storage.get("pmt_state",false);
-      if(r&&r.value){ const p=JSON.parse(r.value); S=Object.assign(S,p);
-        S.mkt=Object.assign(Object.fromEntries(MKT_FIELDS.map(f=>[f[0],f[2]])),p.mkt||{});
-        S.risk=Object.assign(Object.fromEntries(RISK_FIELDS.map(f=>[f[0],f[2]])),p.risk||{});
-      }
-    }
-  }catch(e){}
-}
+async function save(){try{if(window.storage)await window.storage.set("doji_state",JSON.stringify(S),false);}catch(e){}}
+async function load(){try{if(window.storage){const r=await window.storage.get("doji_state",false);if(r&&r.value){const p=JSON.parse(r.value);S=Object.assign(S,p);
+  S.mkt=Object.assign(Object.fromEntries(MKT_FIELDS.map(f=>[f[0],f[2]])),p.mkt||{});
+  S.risk=Object.assign(Object.fromEntries(RISK_FIELDS.map(f=>[f[0],f[2]])),p.risk||{});
+  S.opts=Object.assign({usePreset:true,forceRR:false,fixedSize:false,allowMinOne:true,useHTF:false,useSlope:true,useStructure:false,matchDoji:false,beOn:false,trailOn:false,timeOn:false,useSession:true},p.opts||{});}}}catch(e){}}
 
-/* ---------- helpers ---------- */
+function applyPreset(){
+  if(!S.opts.usePreset)return;
+  const P=PRESETS[S.market]; if(!P)return;
+  if(!S.opts.forceRR) S.risk.rr=P.rr;
+  S.risk.dojiBodyPct=P.dojiBodyPct; S.risk.wickTol=P.wickTol; S.risk.volMult=P.volMult;
+  S.risk.minStopATR=P.minStopATR; S.risk.maxStopATR=P.maxStopATR; S.risk.slBufATR=P.slBufATR;
+  S.risk.cooldown=P.cooldown; S.risk.maxTradesDay=P.maxTradesDay; S.risk.minEmaDistATR=P.minEmaDistATR;
+  S.opts.useHTF=P.useHTF; S.opts.useSlope=P.useSlope; S.opts.useStructure=P.useStructure;
+}
 const num=v=>{const n=parseFloat(v);return isNaN(n)?null:n;};
 function money(v){if(v===null||isNaN(v))return "—";const s=v<0?"-":"";return s+"$"+Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
 function px(v){if(v===null||isNaN(v))return "—";return v.toLocaleString(undefined,{minimumFractionDigits:SPECS[S.market].dp,maximumFractionDigits:SPECS[S.market].dp});}
 function pts(v){if(v===null||isNaN(v))return "—";return v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
+function chip(t,c){return `<span class="chip ${c||''}">${t}</span>`;}
+function hourOf(s){if(!s)return null;s=(""+s).toLowerCase().trim();const m=s.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);if(!m)return null;let h=parseInt(m[1],10);const ap=m[3];if(ap==="pm"&&h<12)h+=12;if(ap==="am"&&h===12)h=0;return (h<0||h>23)?null:h;}
+function minutesOf(s){const h=hourOf(s);if(h===null)return null;const m=(""+s).match(/\d{1,2}:(\d{2})/);return h*60+(m?parseInt(m[1],10):0);}
+function rootSym(s){if(!s)return "MES";const up=String(s).toUpperCase();for(const k of ["MES","MNQ","MGC"])if(up.indexOf(k)===0)return k;return up;}
+function inFilter(t){const f=S.journalFilter||"All";return f==="All"||t.sym===f;}
 
-/* ---------- compute one setup ---------- */
-function computeSetup(st){
-  const sp=SPECS[S.market], r=S.risk;
-  const entry=num(st.entry), swept=num(st.swept), atr=num(S.mkt.atr);
-  if(entry===null) return {ok:false};
-  let stopDist=null;
-  if(S.stopMode==="Fixed ticks") stopDist=r.fixedTicks*sp.tick;
-  else if(S.stopMode==="ATR multiple"){ if(atr===null) return {ok:false}; stopDist=atr*r.atrMult; }
-  else { if(swept===null) return {ok:false}; stopDist=Math.abs(entry-swept)+r.buffer*sp.tick; }
+/* ---------- core setup math (mirrors the Pine) ---------- */
+function calcSetup(o){
+  const sp=SPECS[o.sym||S.market]||SPECS.MES;
+  const e=num(o.entry), w=num(o.wick), atr=num(o.atr!==undefined?o.atr:S.mkt.atr);
+  if(e===null||w===null||atr===null||atr<=0) return {ok:false};
+  const long=o.dir==="Long", sign=long?1:-1;
+  const r=S.risk;
+  const stop = long ? w - atr*r.slBufATR : w + atr*r.slBufATR;
+  const stopDist = Math.abs(e-stop);
   if(stopDist<=0) return {ok:false};
-  const long=st.dir==="Long", sign=long?1:-1;
-  const stopPrice=long?entry-stopDist:entry+stopDist;
-  const stopTicks=stopDist/sp.tick;
-  const risk1=stopDist*sp.pv;
-  const size=Math.max(1,Math.floor(r.maxRisk/risk1));
-  const take=risk1<=r.maxRisk*r.cap;
-  const actual=take?size*risk1:0;
-  const fullPct=100-r.ptpPct-r.tp1Pct;
-  const ptp=entry+sign*r.ptpR*stopDist;
-  const tp1=entry+sign*r.tp1R*stopDist;
-  const full=entry+sign*r.fullR*stopDist;
-  const blendFull=(r.ptpPct/100)*r.ptpR+(r.tp1Pct/100)*r.tp1R+(fullPct/100)*r.fullR;
-  const blendBE=(r.ptpPct/100)*r.ptpR+(r.tp1Pct/100)*r.tp1R;
-  return {ok:true,take,stopPrice,stopDist,stopTicks,risk1,size,actual,
-    ptp,tp1,full,
-    dFull:take?size*risk1*blendFull:0,
-    dBE:take?size*risk1*blendBE:0,
-    dStop:take?-actual:0, rrFull:blendFull};
+  const minD=atr*r.minStopATR, maxD=atr*r.maxStopATR;
+  const inBounds = stopDist>=minD && stopDist<=maxD;
+  const riskCash = (num(r.equity)||0)*(num(r.riskPct)||0)/100;
+  const riskPerCt = stopDist*sp.pv;
+  let qty;
+  if(S.opts.fixedSize){ qty=num(r.fixedQty)||1; }
+  else { const raw = riskPerCt>0 ? Math.floor(riskCash/riskPerCt) : 0;
+         qty = (raw<1 && S.opts.allowMinOne) ? 1 : raw; }
+  qty = Math.min(qty, num(r.maxContracts)||20);
+  const take = inBounds && qty>=1;
+  const tp = e + sign*stopDist*(num(r.rr)||1);
+  const bePx = e + sign*stopDist*(num(r.beR)||0);
+  const actual = take? qty*riskPerCt : 0;
+  return {ok:true,take,inBounds,stop,stopDist,minD,maxD,riskPerCt,qty,tp,bePx,actual,
+    stopTicks:stopDist/sp.tick,
+    dWin: take? qty*riskPerCt*(num(r.rr)||1) : 0,
+    dLoss: take? -actual : 0};
 }
 
-/* ---------- render ---------- */
-function chip(txt,cls){return `<span class="chip ${cls||''}">${txt}</span>`;}
+/* ---------- journal analysis ---------- */
+function analyzeTrade(t){
+  const sp=SPECS[t.sym]||SPECS.MES, long=t.dir==="Long", sign=long?1:-1;
+  const C=calcSetup(t), f=t.flags||{}, r=S.risk, o=S.opts;
+  const e=num(t.entry), atr=num(t.atr), ema=num(t.ema!==undefined?t.ema:S.mkt.ema);
+  const gates=[];
+  let sideOK=true;
+  if(e!==null&&ema!==null){
+    const dist=Math.abs(e-ema), need=(atr||0)*(num(r.minEmaDistATR)||0);
+    sideOK = long ? (e>ema && dist>=need) : (e<ema && dist>=need);
+    gates.push([long?"Above EMA":"Below EMA",sideOK, (long? (e>ema?"+":"-"):(e<ema?"+":"-"))+pts(dist)+" pts"]);
+  } else gates.push(["EMA side",false,"enter entry + EMA"]);
+  gates.push(["Clean pullback ×"+r.pullbackBars,!!f.pullback,f.pullback?"consecutive clean bars":"—"]);
+  gates.push(["Doji (≤"+r.dojiBodyPct+"% body)",!!f.doji,f.doji?"body within limit":"—"]);
+  gates.push(["Volume ≥ "+r.volMult+"× hi",!!f.volume,f.volume?"volume confirmed":"—"]);
+  if(o.useHTF) gates.push(["HTF agrees",!!f.htf,"higher-TF EMA"]);
+  if(o.useSlope) gates.push(["EMA slope agrees",!!f.slope,"slope direction"]);
+  if(o.useStructure) gates.push(["Structure "+(long?"HL":"LH"),!!f.structure,"pivot structure"]);
+  if(o.matchDoji) gates.push(["Doji colour matches",!!f.dojiColor,"—"]);
+  gates.push(["Stop within ATR bounds",!!(C.ok&&C.inBounds),C.ok?pts(C.stopDist)+" pts ("+pts(C.minD)+"–"+pts(C.maxD)+")":"—"]);
+  if(C.ok) gates.push(["Size ≥ 1 contract",C.qty>=1,C.qty+" ct @ "+money(C.riskPerCt)+"/ct"]);
+  const take=gates.every(g=>g[1]);
+  const x=num(t.exit), c=num(t.ct);
+  const pnl=(e!==null&&x!==null&&c!==null)?(x-e)*sp.pv*c*sign:null;
+  const rMult=(pnl!==null&&C.ok&&c&&C.riskPerCt>0)?pnl/(C.riskPerCt*c):null;
+  const tickVal=sp.tick*sp.pv;
+  const netTicks=(pnl!==null&&c&&tickVal>0)?pnl/(tickVal*c):null;
+  return {take,gates,pnl,rMult,netTicks,C};
+}
+
+/* ---------- renders ---------- */
 function renderTop(){
-  const sp=SPECS[S.market], cur=num(S.mkt.cur), ema=num(S.mkt.ema), buy=num(S.mkt.buy);
-  let bias="—",bc="";
-  if(cur!==null&&ema!==null){ if(cur>=ema){bias="LONG ok";bc="long";}else{bias="SHORT ok";bc="short";} }
-  let str="—",sc="";
-  if(buy!==null){ if(buy>=60){str="Strong buy";sc="long";}else if(buy<=40){str="Strong sell";sc="short";}
-    else if(buy>52){str="Mild buy";sc="long";}else if(buy<48){str="Mild sell";sc="short";}else{str="Balanced";sc="";} }
+  const sp=SPECS[S.market], cur=num(S.mkt.cur), ema=num(S.mkt.ema), vr=num(S.mkt.volRatio);
+  let side="—",sc="";
+  if(cur!==null&&ema!==null){if(cur>ema){side="Above EMA";sc="long";}else{side="Below EMA";sc="short";}}
+  let vs="—",vc="";
+  if(vr!==null){const need=num(S.risk.volMult)||0.9;if(vr>=need){vs="Vol ok";vc="long";}else{vs="Vol light";vc="warn";}}
+  const P=PRESETS[S.market];
+  const presetChip = S.opts.usePreset
+    ? chip(`preset <b>${S.market}</b> · ${S.risk.rr}R · ${P?P.session:""}`,"cyan")
+    : chip("manual","warn");
   document.getElementById("topChips").innerHTML=
-    chip(`<b>$${sp.pv}</b>/pt`,"cyan")+chip(`tick ${sp.tick}`,"")+chip(sp.sess,"")+
-    chip(`bias <b>${bias}</b>`,bc)+chip(`${str}`,sc);
+    presetChip+chip(`<b>$${sp.pv}</b>/pt`,"")+chip(`tick ${sp.tick}`,"")+chip(side,sc)+chip(vs,vc);
 }
 function renderMktInputs(){
-  document.getElementById("mktGrid").innerHTML=MKT_FIELDS.map(f=>{
-    const wide=f[0]==="buy"?' style="grid-column:1/-1"':'';
-    return `<div class="f"${wide}><label>${f[1]}</label>
-      <input inputmode="decimal" data-mkt="${f[0]}" value="${S.mkt[f[0]]??''}" placeholder="—"></div>`;
-  }).join("");
+  document.getElementById("mktGrid").innerHTML=MKT_FIELDS.map(f=>
+    `<div class="f"><label>${f[1]}</label><input inputmode="decimal" data-mkt="${f[0]}" value="${S.mkt[f[0]]??''}"></div>`).join("");
 }
 function renderRiskInputs(){
-  const modeBtns=`<div class="f" style="grid-column:1/-1"><label>Stop mode</label>
-    <div class="seg" id="modeSeg">${STOP_MODES.map(m=>`<button data-mode="${m}" class="${S.stopMode===m?'on':''}" style="font-size:12px">${m.split(' ')[0]}</button>`).join("")}</div></div>`;
-  const flds=RISK_FIELDS.map(f=>`<div class="f"><label>${f[1]}</label>
-    <input inputmode="decimal" data-risk="${f[0]}" value="${S.risk[f[0]]??''}"></div>`).join("");
-  document.getElementById("riskGrid").innerHTML=modeBtns+flds+
-    `<div class="f"><label>Full % (auto)</label><input value="${100-S.risk.ptpPct-S.risk.tp1Pct}" disabled style="color:var(--muted)"></div>`;
-}
-function renderDerived(){
-  const m=S.mkt, atr=num(m.atr), pdh=num(m.pdh), pdl=num(m.pdl);
-  const rng=(pdh!==null&&pdl!==null)?pdh-pdl:null;
-  const mid=(pdh!==null&&pdl!==null)?(pdh+pdl)/2:null;
-  const rows=[
-    ["Prior range",rng===null?"—":pts(rng)],
-    ["Midpoint",mid===null?"—":px(mid)],
-    ["Zone tol ×.20",atr===null?"—":pts(atr*0.20)],
-    ["Retest ×.30",atr===null?"—":pts(atr*0.30)],
-    ["Sweep ×.25",atr===null?"—":pts(atr*0.25)],
-    ["Inval ×.10",atr===null?"—":pts(atr*0.10)],
-  ];
-  document.getElementById("derived").innerHTML=rows.map(r=>
-    `<div class="row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join("");
+  document.getElementById("optToggles").innerHTML=OPTS.map(o=>
+    `<button class="tg ${S.opts[o[0]]?'on':''}" data-opt="${o[0]}">${o[1]}</button>`).join("");
+  document.getElementById("riskGrid").innerHTML=RISK_FIELDS.map(f=>
+    `<div class="f"><label>${f[1]}</label><input inputmode="decimal" data-risk="${f[0]}" value="${S.risk[f[0]]??''}"></div>`).join("");
 }
 function renderReads(){
-  const m=S.mkt, cur=num(m.cur), ema=num(m.ema), pdh=num(m.pdh), pdl=num(m.pdl), buy=num(m.buy);
-  const b=document.getElementById("rBias");
-  if(cur!==null&&ema!==null){const l=cur>=ema;b.textContent=l?"LONG ok · price above 4H EMA":"SHORT ok · price below 4H EMA";b.className="v "+(l?"long":"short");}
-  else{b.textContent="—";b.className="v neutral";}
-  const lo=document.getElementById("rLoc");
-  if(cur!==null&&pdh!==null&&pdl!==null){
-    if(cur>pdh){lo.textContent="Above PDH · breakout / long-continuation";lo.className="v long";}
-    else if(cur<pdl){lo.textContent="Below PDL · breakdown / short-continuation";lo.className="v short";}
-    else{lo.textContent="Inside range · watch PDH/PDL & O-N H/L";lo.className="v neutral";}
-  }else{lo.textContent="—";lo.className="v neutral";}
-  const st=document.getElementById("rStr");
-  if(buy!==null){
-    let t,c;
-    if(buy>=60){t="Strong BUY pressure · favor longs";c="long";}
-    else if(buy<=40){t="Strong SELL pressure · favor shorts";c="short";}
-    else if(buy>52){t="Mild buy lean";c="long";}
-    else if(buy<48){t="Mild sell lean";c="short";}
-    else{t="Balanced · no clear edge";c="neutral";}
-    st.textContent=t;st.className="v "+c;
-  }else{st.textContent="—";st.className="v neutral";}
+  const cur=num(S.mkt.cur), ema=num(S.mkt.ema), atr=num(S.mkt.atr), htf=num(S.mkt.htfEma), prev=num(S.mkt.emaPrev), vr=num(S.mkt.volRatio);
+  const set=(id,txt,cls)=>{const el=document.getElementById(id);el.textContent=txt;el.className="v "+cls;};
+  if(cur!==null&&ema!==null&&atr){
+    const d=Math.abs(cur-ema), need=atr*(num(S.risk.minEmaDistATR)||0), ok=d>=need;
+    set("rSide",(cur>ema?"LONG side · ":"SHORT side · ")+pts(d)+" pts from EMA"+(ok?"":" (too close)"),cur>ema?(ok?"long":"warn"):(ok?"short":"warn"));
+  } else set("rSide","—","neutral");
+  if(!S.opts.useHTF) set("rHtf","filter off","neutral");
+  else if(cur!==null&&htf!==null) set("rHtf",cur>htf?"HTF bullish · longs ok":"HTF bearish · shorts ok",cur>htf?"long":"short");
+  else set("rHtf","—","neutral");
+  if(!S.opts.useSlope) set("rSlope","filter off","neutral");
+  else if(ema!==null&&prev!==null) set("rSlope",ema>prev?"EMA rising · longs ok":ema<prev?"EMA falling · shorts ok":"flat",ema>prev?"long":ema<prev?"short":"neutral");
+  else set("rSlope","—","neutral");
+  if(vr!==null){const need=num(S.risk.volMult)||0.9;set("rVol",pts(vr)+"× highest — "+(vr>=need?"passes":"below "+need+"×"),vr>=need?"long":"warn");}
+  else set("rVol","—","neutral");
+  const atrv=num(S.mkt.atr);
+  document.getElementById("derived").innerHTML=[
+    ["Min stop",atrv?pts(atrv*S.risk.minStopATR)+" pts":"—"],
+    ["Max stop",atrv?pts(atrv*S.risk.maxStopATR)+" pts":"—"],
+    ["SL buffer",atrv?pts(atrv*S.risk.slBufATR)+" pts":"—"],
+    ["Risk / trade",money((num(S.risk.equity)||0)*(num(S.risk.riskPct)||0)/100)],
+    ["Trail dist",atrv?pts(atrv*S.risk.trailATR)+" pts":"—"],
+    ["Target",(num(S.risk.rr)||1)+" R"],
+    ["Cooldown",(num(S.risk.cooldown)||0)+" bars"],
+    ["Daily cap",(num(S.risk.maxTradesDay)||0)||"∞"],
+    ["Max size",(num(S.risk.maxContracts)||20)+" ct"],
+    ["Session",S.opts.useSession&&PRESETS[S.market]?PRESETS[S.market].session:"24h"],
+  ].map(r=>`<div class="row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join("");
 }
 function renderSetups(){
-  const host=document.getElementById("setups");
-  host.innerHTML=S.setups.map((st,i)=>{
-    const R=computeSetup(st);
+  document.getElementById("setups").innerHTML=S.setups.map((st,i)=>{
+    const C=calcSetup(Object.assign({sym:S.market,atr:num(S.mkt.atr)},st));
     const L=st.dir==="Long";
-    const cls=R.ok?(R.take?"take":"skip"):"";
-    const stamp=!R.ok?`<span class="stamp">—</span>`:
-      R.take?`<span class="stamp take">TAKE ×${R.size}</span>`:`<span class="stamp skip">SKIP</span>`;
+    const stamp=!C.ok?`<span class="stamp">—</span>`:C.take?`<span class="stamp take">TAKE ×${C.qty}</span>`:`<span class="stamp skip">SKIP</span>`;
     let res="";
-    if(R.ok){
-      const riskW=1, rewW=Math.max(0.2,R.rrFull);
-      const tot=riskW+rewW, rp=(riskW/tot*100), wp=(rewW/tot*100);
+    if(C.ok){
+      const why=!C.inBounds?(C.stopDist<C.minD?"stop too tight (< min ATR)":"stop too wide (> max ATR)"):(C.qty<1?"risk budget < 1 contract":"");
       res=`<div class="res">
         <div class="resgrid">
-          <div class="cell"><span class="cl">Stop</span><span class="cv">${px(R.stopPrice)}</span></div>
-          <div class="cell"><span class="cl">Dist</span><span class="cv sm">${pts(R.stopDist)} · ${R.stopTicks.toFixed(0)}t</span></div>
-          <div class="cell"><span class="cl">1-lot risk</span><span class="cv sm">${money(R.risk1)}</span></div>
-          <div class="cell"><span class="cl">PTP 1R</span><span class="cv sm">${px(R.ptp)}</span></div>
-          <div class="cell"><span class="cl">TP1 2R</span><span class="cv sm">${px(R.tp1)}</span></div>
-          <div class="cell"><span class="cl">Full 3.5R</span><span class="cv sm">${px(R.full)}</span></div>
+          <div class="cell"><span class="cl">Stop</span><span class="cv">${px(C.stop)}</span></div>
+          <div class="cell"><span class="cl">Dist</span><span class="cv sm">${pts(C.stopDist)} · ${C.stopTicks.toFixed(0)}t</span></div>
+          <div class="cell"><span class="cl">1-ct risk</span><span class="cv sm">${money(C.riskPerCt)}</span></div>
+          <div class="cell"><span class="cl">Target</span><span class="cv sm">${px(C.tp)}</span></div>
+          <div class="cell"><span class="cl">BE trigger</span><span class="cv sm">${px(C.bePx)}</span></div>
+          <div class="cell"><span class="cl">Size</span><span class="cv sm">${C.qty} ct</span></div>
         </div>
+        ${why?`<div class="why s">${why}</div>`:""}
         <div class="out">
-          <div class="oc win"><div class="ol">Full plan</div><div class="ov">${money(R.dFull)}</div></div>
-          <div class="oc be"><div class="ol">TP1→BE</div><div class="ov">${money(R.dBE)}</div></div>
-          <div class="oc loss"><div class="ol">Stopped</div><div class="ov">${money(R.dStop)}</div></div>
-        </div>
-        <div class="rrbar"><div class="risk" style="width:${rp}%"></div><div class="rew" style="width:${wp}%"></div></div>
-      </div>`;
-    } else {
-      const need=S.stopMode==="Past swept extreme"?"Enter entry + swept extreme":
-        S.stopMode==="ATR multiple"?"Enter entry (ATR from inputs)":"Enter entry";
-      res=`<div class="res"><div class="hint" style="margin:0">${need} to compute.</div></div>`;
-    }
-    // sweep-depth gate (independent of stop mode)
-    const lvl=num(st.level), swx=num(st.swept), atrv=num(S.mkt.atr);
-    let sweepHTML="";
-    if(lvl!==null&&swx!==null&&atrv!==null){
-      const req=atrv*0.25;
-      const depth=L?(lvl-swx):(swx-lvl);
-      let sc,tx;
-      if(depth<=0){sc="nosweep";tx=`NO SWEEP · extreme didn't clear the level`;}
-      else if(depth<req){sc="shallow";tx=`SHALLOW · depth ${pts(depth)} &lt; min ${pts(req)} — v5 won't arm`;}
-      else{sc="valid";tx=`SWEEP VALID · depth ${pts(depth)} ≥ min ${pts(req)}`;}
-      sweepHTML=`<div class="swb ${sc}">${tx}</div>`;
-    }
-    return `<div class="setup ${cls}">
+          <div class="oc win"><div class="ol">Target</div><div class="ov">${money(C.dWin)}</div></div>
+          <div class="oc be"><div class="ol">Breakeven</div><div class="ov">$0.00</div></div>
+          <div class="oc loss"><div class="ol">Stopped</div><div class="ov">${money(C.dLoss)}</div></div>
+        </div></div>`;
+    } else res=`<div class="res"><div class="hint" style="margin:0">Enter entry + wick (and ATR in Section 1) to compute.</div></div>`;
+    return `<div class="setup ${C.ok?(C.take?'take':'skip'):''}">
       <div class="sh"><span class="name">Setup ${String.fromCharCode(65+i)}</span>${stamp}</div>
       <div class="dirtog" data-si="${i}">
         <button data-dir="Long" class="${L?'onL':''}">LONG</button>
-        <button data-dir="Short" class="${!L?'onS':''}">SHORT</button>
-      </div>
+        <button data-dir="Short" class="${!L?'onS':''}">SHORT</button></div>
       <div class="grid">
-        <div class="f"><label>Entry</label><input inputmode="decimal" data-setup="${i}" data-k="entry" value="${st.entry??''}" placeholder="—"></div>
-        <div class="f"><label>Swept extreme</label><input inputmode="decimal" data-setup="${i}" data-k="swept" value="${st.swept??''}" placeholder="sweep hi/lo"></div>
-        <div class="f" style="grid-column:1/-1"><label>Level swept — support if long · resistance if short (PDL/PDH · O-N H/L · zone)</label><input inputmode="decimal" data-setup="${i}" data-k="level" value="${st.level??''}" placeholder="the level price poked through"></div>
-      </div>
-      ${sweepHTML}
-      ${res}
-    </div>`;
+        <div class="f"><label>Entry (doji close)</label><input inputmode="decimal" data-setup="${i}" data-k="entry" value="${st.entry??''}"></div>
+        <div class="f"><label>${L?'Doji low':'Doji high'}</label><input inputmode="decimal" data-setup="${i}" data-k="wick" value="${st.wick??''}"></div>
+      </div>${res}</div>`;
   }).join("");
 }
 function renderWhatif(){
-  const r=S.risk;
+  const r=S.risk, atr=num(S.mkt.atr);
   document.getElementById("wiBody").innerHTML=Object.keys(SPECS).map(sym=>{
     const sp=SPECS[sym];
-    const maxStop=r.maxRisk*r.cap/sp.pv;
-    const ticks=maxStop/sp.tick;
-    const maxAtr=maxStop/r.atrMult;
-    const two=r.maxRisk/(2*sp.pv);
-    const on=sym===S.market?"on":"";
-    return `<tr class="${on}"><td>${sym}</td><td>${maxStop.toFixed(2)}</td><td>${ticks.toFixed(0)}</td><td>${maxAtr.toFixed(1)}</td><td>${two.toFixed(2)}</td></tr>`;
+    const minD=atr?atr*r.minStopATR:null, maxD=atr?atr*r.maxStopATR:null;
+    const riskCash=(num(r.equity)||0)*(num(r.riskPct)||0)/100;
+    const oneCt=minD?minD*sp.pv:null;
+    const ctAtMin=oneCt?Math.floor(riskCash/oneCt):null;
+    return `<tr class="${sym===S.market?'on':''}"><td>${sym}</td><td>${minD?pts(minD):'—'}</td><td>${maxD?pts(maxD):'—'}</td><td>${oneCt?money(oneCt):'—'}</td><td>${ctAtMin!==null?ctAtMin:'—'}</td></tr>`;
   }).join("");
 }
-function analyzeTrade(t){
-  const sp=SPECS[t.sym]||SPECS.MES;
-  const long=t.dir==="Long", sign=long?1:-1;
-  const e=num(t.entry), sw=num(t.swept), lv=num(t.level), atr=num(t.atr);
-  const f=t.flags||{};
-  let sweep=null;
-  if(lv!==null&&sw!==null&&atr!==null){const req=atr*0.25;const depth=long?(lv-sw):(sw-lv);sweep={depth,req,valid:depth>=req,any:depth>0};}
-  const parts=[["BOS",!!f.bos],["Pressure",!!f.pressure],["Rel vol",!!f.relvol],["FVG",!!f.fvg],["ATR exp",!!f.atrexp]];
-  const score=parts.reduce((a,p)=>a+(p[1]?1:0),0);
-  const scoreOK=score>=2||!!f.absorption;
-  const gates=[]; let take;
-  if(t.mode==="Continuation"){
-    gates.push(["Retest held",!!f.retest,f.retest?"reclaimed & held":"—"]);
-    gates.push(["Bias aligned",!!f.bias,long?"price ≥ 4H EMA":"price ≤ 4H EMA"]);
-    gates.push(["Score ≥ 2",score>=2,"score "+score+"/5"]);
-    take=!!f.retest&&!!f.bias&&score>=2;
-  }else{
-    const armed=!!(sweep&&sweep.valid);
-    gates.push(["Sweep armed",armed,sweep?(sweep.valid?"depth "+pts(sweep.depth)+" ≥ "+pts(sweep.req):(sweep.any?"shallow "+pts(sweep.depth)+" < "+pts(sweep.req):"no sweep")):"need level+swept+ATR"]);
-    gates.push(["Break of structure",!!f.bos,f.bos?"closed beyond pivot":"—"]);
-    gates.push(["Strong close",!!f.barq,"bar ≥60% range"]);
-    gates.push(["Bias aligned",!!f.bias,long?"price ≥ 4H EMA":"price ≤ 4H EMA"]);
-    gates.push(["Score ≥2 / absorption",scoreOK,"score "+score+"/5"+(f.absorption?" +abs":"")]);
-    take=armed&&!!f.bos&&!!f.barq&&!!f.bias&&scoreOK;
-  }
-  let stopDist=null;
-  if(e!==null&&sw!==null) stopDist=Math.abs(e-sw)+(num(S.risk.buffer)||0)*sp.tick;
-  const risk1=stopDist!==null?stopDist*sp.pv:null;
-  const ptpR=num(S.risk.ptpR)||1, tp1R=num(S.risk.tp1R)||2, fullR=num(S.risk.fullR)||3.5;
-  const tgtPtp=stopDist!==null?e+sign*ptpR*stopDist:null;
-  const tgtTp1=stopDist!==null?e+sign*tp1R*stopDist:null;
-  const tgtRun=stopDist!==null?e+sign*fullR*stopDist:null;
-  const beRef=(e!==null)?e+sign*2*sp.tick:null;
-  let pnl=null,totalCt=null,locked=null,runnerBE=false,legDetail=[];
-  if(t.exitMode==="Scaled"){
-    const mkLeg=(name,q,px,tgt)=>{const qq=num(q);if(qq===null||qq===0)return null;const p=num(px);const use=p!==null?p:tgt;if(use===null||e===null)return null;return {name,q:qq,px:use,pnl:(use-e)*sp.pv*qq*sign};};
-    const lp=mkLeg("PTP",t.ptpQ,t.ptpPx,tgtPtp), lt=mkLeg("TP1",t.tp1Q,t.tp1Px,tgtTp1), lr=mkLeg("Runner",t.runQ,t.runPx,tgtRun);
-    legDetail=[lp,lt,lr].filter(Boolean);
-    if(legDetail.length){pnl=legDetail.reduce((a,x)=>a+x.pnl,0);totalCt=legDetail.reduce((a,x)=>a+x.q,0);locked=(lp?lp.pnl:0)+(lt?lt.pnl:0);runnerBE=!!lt;}
-  } else {
-    const x=num(t.exit),c=num(t.ct);
-    if(e!==null&&x!==null&&c!==null){pnl=(x-e)*sp.pv*c*sign;totalCt=c;}
-  }
-  const rMult=(pnl!==null&&risk1!==null&&totalCt&&risk1>0)?pnl/(risk1*totalCt):null;
-  const tickVal=sp.tick*sp.pv;
-  const netTicks=(pnl!==null&&totalCt&&tickVal>0)?pnl/(tickVal*totalCt):null;
-  let runnerR=null, runnerOutcome=null;
-  if(t.exitMode==="Scaled"&&risk1){
-    const lr=legDetail.find(l=>l.name==="Runner");
-    if(lr){
-      runnerR=lr.pnl/(risk1*lr.q);
-      runnerOutcome = runnerR>=fullR*0.9?"Full":(Math.abs(runnerR)<=0.3?"BE":(runnerR<-0.3?"Loss":"Partial"));
-    }
-  }
-  return {take,score,scoreOK,gates,sweep,pnl,rMult,tgtPtp,tgtTp1,tgtRun,beRef,locked,runnerBE,legDetail,totalCt,risk1,runnerR,runnerOutcome,netTicks,stopDist};
-}
-function hourOf(s){
-  if(!s)return null; s=(""+s).toLowerCase().trim();
-  const m=s.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/); if(!m)return null;
-  let h=parseInt(m[1],10); const ap=m[3];
-  if(ap==="pm"&&h<12)h+=12; if(ap==="am"&&h===12)h=0;
-  if(h<0||h>23)return null; return h;
-}
-function sessionOf(s){const h=hourOf(s);return h===null?null:(h<12?"A.M.":"P.M.");}
 function analysisHTML(t){
   const A=analyzeTrade(t);
   const g=A.gates.map(x=>`<div class="gate ${x[1]?'ok':'no'}"><span>${x[1]?'✓':'✗'} ${x[0]}</span><em>${x[2]}</em></div>`).join("");
-  const passed=A.gates.filter(x=>x[1]).map(x=>x[0]);
   const failed=A.gates.filter(x=>!x[1]).map(x=>x[0]);
-  const why=A.take
-    ? "Engine TAKES · "+t.mode+" · gates met: "+passed.join(", ")+"."
-    : "Engine SKIPS · blocked by: "+failed.join(", ")+".";
-  let exitBlk="";
-  if(t.exitMode==="Scaled"&&A.legDetail.length){
-    const legs=A.legDetail.map(l=>`<div class="legln">${l.name} <b>${l.q}</b> @ ${pts(l.px)} → <b class="${l.pnl>=0?'':'neg'}">${money(l.pnl)}</b></div>`).join("");
-    let be="";
-    if(A.runnerBE) be=`<div class="belock">✓ TP1 captured → stop moved to breakeven (~${A.beRef!==null?pts(A.beRef):'entry'}). Locked in ${money(A.locked)} · runner now risk-free.</div>`;
-    let rtag="";
-    if(A.runnerOutcome){
-      const cls={Full:'good',BE:'med',Partial:'info',Loss:'high'}[A.runnerOutcome];
-      const lbl={Full:'Runner hit Full 3.5R ✓',BE:'Runner scratched at BE',Partial:'Runner exited early · '+A.runnerR.toFixed(1)+'R',Loss:'Runner stopped for a loss'}[A.runnerOutcome];
-      rtag=`<div class="rtag ${cls}">${lbl}</div>`;
-    }
-    exitBlk=`<div class="legwrap">${legs}</div>${be}${rtag}`;
-  }
-  // R-levels: price of each R target + whether it was reached
-  let rLevels="";
-  {
-    const sp=SPECS[t.sym]||SPECS.MES, e=num(t.entry), sign=t.dir==="Long"?1:-1;
-    if(A.stopDist&&e!==null){
-      let rAch=null;
-      if(t.exitMode==="Scaled"&&A.legDetail.length) rAch=Math.max(...A.legDetail.map(l=>(l.px-e)*sign/A.stopDist));
-      else { const x=num(t.exit); if(x!==null) rAch=(x-e)*sign/A.stopDist; }
-      const rset=[...new Set([num(S.risk.ptpR),num(S.risk.tp1R),num(S.risk.fullR)].filter(v=>v!==null&&v>0))].sort((a,b)=>a-b);
-      if(rset.length){
-        const rTime=R=>{const pr=num(S.risk.ptpR),tr1=num(S.risk.tp1R),fr=num(S.risk.fullR);if(pr!==null&&R===pr)return t.ptpTime;if(tr1!==null&&R===tr1)return t.tp1Time;if(fr!==null&&R===fr)return t.runTime;return "";};
-        const cells=rset.map(R=>{const px=e+sign*R*A.stopDist;const hit=rAch!==null&&rAch>=R-0.05;const tm=rTime(R);return `<span class="rlvl ${hit?'hit':''}">${R}R · ${pts(px)} ${hit?'✓':'·'}${hit&&tm?' @'+tm:''}</span>`;}).join("");
-        rLevels=`<div class="rlvls">${cells}</div>`;
-      }
-    }
+  const why=A.take?"Strategy TAKES this setup — all gates met.":"Strategy SKIPS · blocked by: "+failed.join(", ")+".";
+  let lvl="";
+  if(A.C.ok){
+    lvl=`<div class="resgrid" style="margin-bottom:10px">
+      <div class="cell"><span class="cl">Stop</span><span class="cv sm">${px(A.C.stop)}</span></div>
+      <div class="cell"><span class="cl">Target ${S.risk.rr}R</span><span class="cv sm">${px(A.C.tp)}</span></div>
+      <div class="cell"><span class="cl">BE trigger</span><span class="cv sm">${px(A.C.bePx)}</span></div></div>`;
   }
   let pnlS="";
   if(A.pnl!==null){
-    const dur=num(t.dur), sess=sessionOf(t.etime);
     const bits=[];
     if(A.rMult!==null)bits.push(A.rMult.toFixed(2)+"R");
     if(A.netTicks!==null)bits.push((A.netTicks>=0?"+":"")+A.netTicks.toFixed(1)+"t");
-    if(A.totalCt!==null)bits.push(A.totalCt+" ct");
-    if(dur!==null)bits.push(dur+"m");
+    if(t.ct)bits.push(t.ct+" ct");
+    if(t.dur)bits.push(t.dur+"m");
+    if(t.exitReason)bits.push(t.exitReason);
     const stamp=[(t.date||""),(t.etime||"")].filter(Boolean).join(" ");
     if(stamp)bits.push(stamp);
-    else if(sess)bits.push(sess);
     pnlS=`<div class="jpl ${A.pnl>=0?'pos':'neg'}">${A.pnl>=0?'Win':'Loss'} ${money(A.pnl)}${bits.length?" · "+bits.join(" · "):""}</div>`;
   }
-  return `<div class="gates">${g}</div><div class="why ${A.take?'t':'s'}">${why}</div>${rLevels}${exitBlk}${pnlS}`;
-}
-function inFilter(t){const f=S.journalFilter||"All";return f==="All"||t.sym===f;}
-function journalStats(){
-  let trades=0,wins=0,losses=0,gwin=0,gloss=0,lwin=0,lloss=0;
-  let wd=[],ld=[],am=0,pm=0,amHas=false,pmHas=false;
-  S.journal.forEach(t=>{
-    if(!inFilter(t))return;
-    const A=analyzeTrade(t); if(A.pnl===null)return;
-    trades++;
-    if(A.pnl>0){wins++;gwin+=A.pnl;lwin=Math.max(lwin,A.pnl);}
-    else if(A.pnl<0){losses++;gloss+=-A.pnl;lloss=Math.max(lloss,-A.pnl);}
-    const d=num(t.dur);
-    if(d!==null){ if(A.pnl>0)wd.push(d); else if(A.pnl<0)ld.push(d); }
-    const s=sessionOf(t.etime);
-    if(s==="A.M."){am+=A.pnl;amHas=true;} else if(s==="P.M."){pm+=A.pnl;pmHas=true;}
-  });
-  const avg=a=>a.length?(a.reduce((x,y)=>x+y,0)/a.length):null;
-  const r2=v=>v===null?null:Math.round(v*100)/100;
-  const r1=v=>v===null?null:Math.round(v*10)/10;
-  return {trades,wins,losses,gwin:r2(gwin),gloss:r2(gloss),lwin:r2(lwin),lloss:r2(lloss),
-    wmin:r1(avg(wd)),lmin:r1(avg(ld)),am:amHas?r2(am):null,pm:pmHas?r2(pm):null};
-}
-function setupStats(){
-  const g={};
-  S.journal.forEach(t=>{
-    if(!inFilter(t))return;
-    const A=analyzeTrade(t); if(A.pnl===null)return;
-    const key=(t.mode||"?")+" · "+(t.ref||"Prior-day");
-    const o=g[key]||(g[key]={n:0,wins:0,net:0,sumR:0,rn:0});
-    o.n++; o.net+=A.pnl; if(A.pnl>0)o.wins++; if(A.rMult!=null){o.sumR+=A.rMult;o.rn++;}
-  });
-  return Object.keys(g).map(k=>({key:k,n:g[k].n,wins:g[k].wins,net:g[k].net,winRate:g[k].wins/g[k].n,avgR:g[k].rn?g[k].sumR/g[k].rn:null})).sort((a,b)=>b.net-a.net);
-}
-function runnerStats(){
-  let n=0,full=0,be=0,partial=0,loss=0,sumR=0;
-  S.journal.forEach(t=>{
-    if(!inFilter(t))return;
-    if(t.exitMode!=="Scaled")return;
-    const A=analyzeTrade(t);
-    if(A.runnerOutcome===null)return;
-    n++; sumR+=(A.runnerR||0);
-    if(A.runnerOutcome==="Full")full++;
-    else if(A.runnerOutcome==="BE")be++;
-    else if(A.runnerOutcome==="Loss")loss++;
-    else partial++;
-  });
-  return {n,full,be,partial,loss,hitRate:n?full/n:null,avgR:n?sumR/n:null};
-}
-function updateTotals(){
-  let total=0,count=0;
-  S.journal.forEach(t=>{const a=analyzeTrade(t);if(a.pnl!==null){total+=a.pnl;count++;}});
-  const tv=document.getElementById("jTotal");
-  if(!tv)return;
-  tv.textContent=money(total);tv.style.color=total>0?"var(--long)":total<0?"var(--short)":"var(--text)";
-  const lossHit=total<=-150;
-  document.getElementById("jStatus").innerHTML=chip(`trades <b>${count}/4</b>`,count>=4?"warn":"cyan")+chip(lossHit?"loss limit hit":"within $150 limit",lossHit?"short":"long");
-  const rs=runnerStats(), jr=document.getElementById("jRunner");
-  if(jr) jr.innerHTML=rs.n
-    ? chip(`Runner Full <b>${rs.full}</b>/${rs.n}`, rs.hitRate>=0.4?"long":"warn")+chip(`BE <b>${rs.be}</b>`,"")+(rs.partial?chip(`part <b>${rs.partial}</b>`,""):"")+chip(`avg <b>${rs.avgR.toFixed(2)}R</b>`,"cyan")
-    : "";
-}
-function refreshCard(i){
-  const t=S.journal[i], A=analyzeTrade(t);
-  const res=document.getElementById("jres"+i); if(res)res.innerHTML=analysisHTML(t);
-  const jv=document.getElementById("jv"+i); if(jv){jv.textContent=A.take?"TAKE":"SKIP";jv.className="jverd "+(A.take?"t":"s");}
-  const jsc=document.getElementById("jsc"+i); if(jsc)jsc.textContent=A.score+"/5";
-  const jp=document.getElementById("jp"+i); if(jp){jp.textContent=A.pnl===null?"—":money(A.pnl);jp.className="jpnl "+(A.pnl>=0?"pos":"neg");}
-  updateTotals();
+  return `<div class="gates">${g}</div><div class="why ${A.take?'t':'s'}">${why}</div>${lvl}${pnlS}`;
 }
 function renderJournal(){
   const host=document.getElementById("jRows"); if(!host)return;
   const flt=S.journalFilter||"All";
   const fb=document.getElementById("jFilter");
   if(fb)[...fb.children].forEach(x=>x.classList.toggle("on",x.dataset.mf===flt));
-  const FL=[["bos","BOS"],["pressure","Pressure"],["relvol","Rel vol"],["fvg","FVG"],["atrexp","ATR exp"],["absorption","Absorption"],["barq","Strong close"],["bias","Bias"]];
+  const FL=[["doji","Doji"],["pullback","Pullback"],["volume","Volume"],["htf","HTF"],["slope","Slope"],["structure","Structure"],["dojiColor","Doji colour"]];
   host.innerHTML=S.journal.map((t,i)=>{
     if(flt!=="All"&&t.sym!==flt)return "";
-    const A=analyzeTrade(t);
-    const fdefs=t.mode==="Continuation"?FL.concat([["retest","Retest"]]):FL;
-    const chipsF=fdefs.map(fd=>`<button class="jflag ${t.flags&&t.flags[fd[0]]?'on':''}" data-jflag="${i}" data-flag="${fd[0]}">${fd[1]}</button>`).join("");
+    const A=analyzeTrade(t), L=t.dir==="Long";
+    const chips=FL.map(fd=>`<button class="tg ${t.flags&&t.flags[fd[0]]?'on':''}" data-jflag="${i}" data-flag="${fd[0]}">${fd[1]}</button>`).join("");
     return `<details class="jcard" data-jt="${i}" ${t._open?'open':''}>
       <summary>
-        <span class="jh">${t.sym} <b class="${t.dir==='Long'?'cl':'cs'}">${t.dir==='Long'?'L':'S'}</b> · ${t.mode} · ${t.ref||'Prior-day'}</span>
-        <span class="jscore" id="jsc${i}">${A.score}/5</span>
-        <span class="jverd ${A.take?'t':'s'}" id="jv${i}">${A.take?'TAKE':'SKIP'}</span>
-        <span class="jpnl ${A.pnl>=0?'pos':'neg'}" id="jp${i}">${A.pnl===null?'—':money(A.pnl)}</span>
+        <span class="jh">${t.sym} <b class="${L?'cl':'cs'}">${L?'L':'S'}</b> · ${t.exitReason||'—'}</span>
+        <span class="jverd ${A.take?'t':'s'}">${A.take?'TAKE':'SKIP'}</span>
+        <span class="jpnl ${A.pnl>=0?'pos':'neg'}">${A.pnl===null?'—':money(A.pnl)}</span>
       </summary>
       <div class="jbody">
-        <div class="jtoggles">
-          <div class="jseg" data-jdir="${i}"><button class="${t.dir==='Long'?'onL':''}" data-d="Long">LONG</button><button class="${t.dir==='Short'?'onS':''}" data-d="Short">SHORT</button></div>
-          <div class="jseg" data-jmode="${i}"><button class="${t.mode==='Reversal'?'on':''}" data-mo="Reversal">Reversal</button><button class="${t.mode==='Continuation'?'on':''}" data-mo="Continuation">Contin.</button></div>
-        </div>
+        <div class="dirtog" data-jdir="${i}">
+          <button data-d="Long" class="${L?'onL':''}">LONG</button>
+          <button data-d="Short" class="${!L?'onS':''}">SHORT</button></div>
         <div class="jgrid">
           <div class="f"><label>Symbol</label><select class="jsel" data-jsym="${i}">${Object.keys(SPECS).map(s=>`<option ${t.sym===s?'selected':''}>${s}</option>`).join("")}</select></div>
-          <div class="f"><label>Reference</label><select class="jsel" data-jref="${i}">${["Zone","Prior-day","Overnight"].map(s=>`<option ${((t.ref||"Prior-day")===s)?'selected':''}>${s}</option>`).join("")}</select></div>
-          <div class="f"><label>ATR pts (at trade)</label><input inputmode="decimal" data-j="${i}" data-k="atr" value="${t.atr??''}"></div>
+          <div class="f"><label>Exit reason</label><select class="jsel" data-jexit="${i}">${EXITS.map(s=>`<option ${t.exitReason===s?'selected':''}>${s}</option>`).join("")}</select></div>
           <div class="f"><label>Entry</label><input inputmode="decimal" data-j="${i}" data-k="entry" value="${t.entry??''}"></div>
-          <div class="f"><label>Swept extreme</label><input inputmode="decimal" data-j="${i}" data-k="swept" value="${t.swept??''}"></div>
-          <div class="f"><label>Level swept</label><input inputmode="decimal" data-j="${i}" data-k="level" value="${t.level??''}"></div>
-          <div class="f"><label>Date</label><input inputmode="text" data-j="${i}" data-k="date" value="${t.date??''}" placeholder="MM/DD"></div>
-          <div class="f"><label>Entry time (HH:MM)</label><input inputmode="text" data-j="${i}" data-k="etime" value="${t.etime??''}" placeholder="09:36"></div>
-          <div class="f"><label>Duration (min)</label><input inputmode="decimal" data-j="${i}" data-k="dur" value="${t.dur??''}" placeholder="min held"></div>
+          <div class="f"><label>Doji wick</label><input inputmode="decimal" data-j="${i}" data-k="wick" value="${t.wick??''}"></div>
+          <div class="f"><label>EMA at entry</label><input inputmode="decimal" data-j="${i}" data-k="ema" value="${t.ema??''}"></div>
+          <div class="f"><label>ATR at entry</label><input inputmode="decimal" data-j="${i}" data-k="atr" value="${t.atr??''}"></div>
+          <div class="f"><label>Contracts</label><input inputmode="decimal" data-j="${i}" data-k="ct" value="${t.ct??''}"></div>
+          <div class="f"><label>Exit price</label><input inputmode="decimal" data-j="${i}" data-k="exit" value="${t.exit??''}"></div>
+          <div class="f"><label>Date</label><input data-j="${i}" data-k="date" value="${t.date??''}" placeholder="MM/DD"></div>
+          <div class="f"><label>Entry time</label><input data-j="${i}" data-k="etime" value="${t.etime??''}" placeholder="10:15"></div>
+          <div class="f"><label>Duration (min)</label><input inputmode="decimal" data-j="${i}" data-k="dur" value="${t.dur??''}"></div>
           <div class="f"><label>Note</label><input data-j="${i}" data-k="note" value="${(t.note||'').replace(/"/g,'&quot;')}"></div>
         </div>
-        <div class="jlabel">Exit — how it came off</div>
-        <div class="jseg jexit" data-jexit="${i}" style="margin-bottom:11px">
-          <button class="${t.exitMode!=='Scaled'?'on':''}" data-em="Single">Single</button>
-          <button class="${t.exitMode==='Scaled'?'on':''}" data-em="Scaled">Scaled · PTP/TP1/Runner</button>
-        </div>
-        ${t.exitMode==="Scaled" ? `<div class="jgrid">
-          <div class="f"><label>PTP qty (1R)</label><input inputmode="decimal" data-j="${i}" data-k="ptpQ" value="${t.ptpQ??''}"></div>
-          <div class="f"><label>PTP fill px</label><input inputmode="decimal" data-j="${i}" data-k="ptpPx" value="${t.ptpPx??''}" placeholder="${A.tgtPtp!=null?pts(A.tgtPtp):'target'}"></div>
-          <div class="f"><label>TP1 qty (2R)</label><input inputmode="decimal" data-j="${i}" data-k="tp1Q" value="${t.tp1Q??''}"></div>
-          <div class="f"><label>TP1 fill px</label><input inputmode="decimal" data-j="${i}" data-k="tp1Px" value="${t.tp1Px??''}" placeholder="${A.tgtTp1!=null?pts(A.tgtTp1):'target'}"></div>
-          <div class="f"><label>Runner qty (3.5R)</label><input inputmode="decimal" data-j="${i}" data-k="runQ" value="${t.runQ??''}"></div>
-          <div class="f"><label>Runner fill px</label><input inputmode="decimal" data-j="${i}" data-k="runPx" value="${t.runPx??''}" placeholder="${A.tgtRun!=null?pts(A.tgtRun):'BE / target'}"></div>
-        </div>` : `<div class="jgrid">
-          <div class="f"><label>Contracts</label><input inputmode="decimal" data-j="${i}" data-k="ct" value="${t.ct??''}"></div>
-          <div class="f"><label>Exit</label><input inputmode="decimal" data-j="${i}" data-k="exit" value="${t.exit??''}"></div>
-        </div>`}
-        <div class="jlabel" style="margin-top:11px">Observed on chart — tap what was true</div>
-        <div class="jflags">${chipsF}</div>
-        <div class="jres" id="jres${i}">${analysisHTML(t)}</div>
-        <button class="del jdel" data-jdel="${i}">Delete trade</button>
-      </div>
-    </details>`;
+        <div class="jlabel">Observed on chart</div>
+        <div class="toggles">${chips}</div>
+        <div id="jres${i}">${analysisHTML(t)}</div>
+        <button class="del" data-jdel="${i}">Delete trade</button>
+      </div></details>`;
   }).join("");
   updateTotals();
 }
-function minutesOf(s){const h=hourOf(s);if(h===null)return null;const m=(""+s).match(/\d{1,2}:(\d{2})/);const mm=m?parseInt(m[1],10):0;return h*60+mm;}
+function updateTotals(){
+  let total=0,count=0;
+  S.journal.forEach(t=>{if(!inFilter(t))return;const a=analyzeTrade(t);if(a.pnl!==null){total+=a.pnl;count++;}});
+  const tv=document.getElementById("jTotal"); if(!tv)return;
+  tv.textContent=money(total);tv.style.color=total>0?"var(--long)":total<0?"var(--short)":"var(--text)";
+  const cap=num(S.risk.maxTradesDay)||0;
+  document.getElementById("jStatus").innerHTML=chip(`trades <b>${count}</b>`+(cap?`/${cap}`:""),cap&&count>=cap?"warn":"cyan");
+}
+function refreshCard(i){const el=document.getElementById("jres"+i);if(el)el.innerHTML=analysisHTML(S.journal[i]);updateTotals();renderPerf();renderTimeline();renderBacktest();}
+function renderPerf(){
+  const host=document.getElementById("perfScore"); if(!host)return;
+  const pm=document.getElementById("perfMkt"); if(pm)pm.textContent="· "+(S.journalFilter||"All");
+  const items=S.journal.filter(inFilter).map(t=>({t,A:analyzeTrade(t)})).filter(o=>o.A.pnl!==null);
+  if(!items.length){host.innerHTML=`<div class="hint" style="margin:0">No completed trades.</div>`;document.getElementById("perfExits").innerHTML="";document.getElementById("perfRecs").innerHTML="";return;}
+  let wins=0,gw=0,gl=0,sumR=0,rn=0,wd=[],ld=[];
+  items.forEach(o=>{const p=o.A.pnl;if(p>0){wins++;gw+=p;}else if(p<0)gl+=-p;if(o.A.rMult!=null){sumR+=o.A.rMult;rn++;}const d=num(o.t.dur);if(d!==null){(p>0?wd:ld).push(d);}});
+  const n=items.length,net=gw-gl,wr=wins/n,avgW=wins?gw/wins:0,avgL=(n-wins)?gl/(n-wins):0,RR=avgL?avgW/avgL:null,pf=gl?gw/gl:null;
+  const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+  const wm=avg(wd),lm=avg(ld);
+  host.innerHTML=[
+    ["Trades",String(n)],["Net P/L",money(net)],["Win rate",(wr*100).toFixed(0)+"%"],
+    ["Reward : risk",RR!=null?RR.toFixed(2)+" : 1":"—"],["Profit factor",pf!=null?pf.toFixed(2):"—"],
+    ["Expectancy",money(net/n)],["Avg R",rn?(sumR/rn).toFixed(2):"—"],
+    ["Hold win/loss",(wm!=null?wm.toFixed(0):"—")+" / "+(lm!=null?lm.toFixed(0):"—")+"m"]
+  ].map(r=>`<div class="row"><span>${r[0]}</span><b class="${String(r[1]).indexOf("-$")===0?'neg':''}">${r[1]}</b></div>`).join("");
+  // by exit reason
+  const g={};
+  items.forEach(o=>{const k=o.t.exitReason||"—";const e=g[k]||(g[k]={n:0,net:0,w:0});e.n++;e.net+=o.A.pnl;if(o.A.pnl>0)e.w++;});
+  const rows=Object.keys(g).sort((a,b)=>g[b].net-g[a].net);
+  document.getElementById("perfExits").innerHTML=`<table class="wi"><thead><tr><th>Exit</th><th>n</th><th>Win%</th><th>Net</th></tr></thead><tbody>${rows.map(k=>`<tr><td>${k}</td><td>${g[k].n}</td><td>${(g[k].w/g[k].n*100).toFixed(0)}%</td><td style="color:${g[k].net>=0?'var(--long)':'var(--short)'}">${money(g[k].net)}</td></tr>`).join("")}</tbody></table>`;
+  // tuning
+  const recs=[];
+  if(pf!=null&&pf<1) recs.push(["high","Net negative","Profit factor "+pf.toFixed(2)+" — expectancy "+money(net/n)+"/trade. The levers below are where to look."]);
+  if(RR!=null&&RR<1.2&&(num(S.risk.rr)||1)<=1) recs.push(["med","R:R is capped at "+S.risk.rr,"You exit at "+S.risk.rr+"R, so wins can't outrun losses unless win rate is high. Test R:R 1.5–2 and compare — a 1:1 target needs >50% wins just to break even."]);
+  if(wr<0.5&&(num(S.risk.rr)||1)<=1) recs.push(["med","Win rate below the 1:1 break-even","At "+S.risk.rr+":1 you need >50% wins; you're at "+(wr*100).toFixed(0)+"%. Either tighten entries (require HTF/slope/structure) or raise R:R."]);
+  if(lm!=null&&wm!=null&&lm>wm*2) recs.push(["med","Losers held "+(lm/wm).toFixed(1)+"× longer","Consider enabling the time exit (max bars) so dead trades close faster."]);
+  if(g["SL"]&&g["SL"].n/n>0.5) recs.push(["info","Most exits are stop-outs","Over half of trades hit SL. Test a wider min-stop (ATR) or require volume/structure confirmation."]);
+  if(g["Breakeven"]&&g["Breakeven"].n/n>0.3) recs.push(["info","Breakeven is eating winners","BE triggers at "+S.risk.beR+"R and is closing "+g["Breakeven"].n+" trades flat. Test a later trigger (0.8–1R) or turn BE off."]);
+  if(n<30) recs.push(["info","Small sample",n+" trades — too few to conclude. Log 30–50+ and change one lever at a time."]);
+  if(!recs.length) recs.push(["good","Nothing flagged","Stats look balanced for this sample."]);
+  const ord={high:0,med:1,info:2,good:3};recs.sort((a,b)=>ord[a[0]]-ord[b[0]]);
+  document.getElementById("perfRecs").innerHTML=recs.map(r=>`<div class="rec ${r[0]}"><div class="rt">${r[1]}</div><div class="rb">${r[2]}</div></div>`).join("");
+}
 function renderTimeline(){
   const host=document.getElementById("timeline"); if(!host)return;
-  const items=S.journal.map((t,i)=>({t,A:analyzeTrade(t),mins:minutesOf(t.etime)})).filter(o=>o.A.pnl!==null&&((S.journalFilter||"All")==="All"||o.t.sym===S.journalFilter));
-  items.sort((a,b)=>{
-    if(a.mins===null&&b.mins===null)return 0;
-    if(a.mins===null)return 1; if(b.mins===null)return -1;
-    return a.mins-b.mins;
-  });
-  if(!items.length){ host.innerHTML=`<div class="hint" style="margin-top:0">No completed trades yet — they'll appear here in time order as they close.</div>`; return; }
+  const items=S.journal.filter(inFilter).map(t=>({t,A:analyzeTrade(t),mins:minutesOf(t.etime)})).filter(o=>o.A.pnl!==null);
+  items.sort((a,b)=>{if(a.mins===null&&b.mins===null)return 0;if(a.mins===null)return 1;if(b.mins===null)return -1;return a.mins-b.mins;});
+  if(!items.length){host.innerHTML=`<div class="hint" style="margin-top:0">No completed trades yet.</div>`;return;}
   let run=0;
-  const head=`<div class="tlhead"><span>Time</span><span>Trade</span><span>P&amp;L</span><span>Running</span></div>`;
-  const rows=items.map(o=>{
-    run+=o.A.pnl;
-    const t=o.t, long=t.dir==="Long";
-    const time=t.etime?String(t.etime):"—";
-    const runCls=run>=0?"pos":"neg";
+  host.innerHTML=`<div class="tlhead"><span>Time</span><span>Trade</span><span>P&amp;L</span><span>Running</span></div>`+items.map(o=>{
+    run+=o.A.pnl;const t=o.t,L=t.dir==="Long";
     return `<div class="tlrow">
-      <span class="tltime">${time}${t.date?`<em style="display:block;font-size:10px;color:var(--dim)">${t.date}</em>`:""}</span>
-      <span class="tlsym">${t.sym} <b class="${long?'l':'s'}">${long?'L':'S'}</b><em>${t.mode} · ${t.ref||'Prior-day'}${o.A.netTicks!==null?" · "+(o.A.netTicks>=0?"+":"")+o.A.netTicks.toFixed(1)+"t":""}</em></span>
+      <span class="tltime">${t.etime||"—"}${t.date?`<em style="display:block;font-size:10px;color:var(--dim)">${t.date}</em>`:""}</span>
+      <span class="tlsym">${t.sym} <b class="${L?'l':'s'}">${L?'L':'S'}</b><em>${t.exitReason||'—'}${o.A.netTicks!==null?" · "+(o.A.netTicks>=0?"+":"")+o.A.netTicks.toFixed(1)+"t":""}</em></span>
       <span class="tlpnl ${o.A.pnl>=0?'pos':'neg'}">${money(o.A.pnl)}</span>
-      <span class="tlrun"><b class="${runCls}">${money(run)}</b></span>
-    </div>`;
+      <span class="tlrun"><b class="${run>=0?'pos':'neg'}">${money(run)}</b></span></div>`;
   }).join("");
-  host.innerHTML=head+rows;
 }
 function renderBacktest(){
   const host=document.getElementById("backtest"); if(!host)return;
   const bm=document.getElementById("btMkt"); if(bm)bm.textContent="· "+(S.journalFilter||"All");
   const eq=document.getElementById("eqcurve");
-  const items=S.journal.map(t=>({t,A:analyzeTrade(t),mins:minutesOf(t.etime)})).filter(o=>o.A.pnl!==null&&inFilter(o.t));
-  if(!items.length){ host.innerHTML=`<div class="hint" style="margin:0">No completed trades yet.</div>`; if(eq)eq.innerHTML=""; return; }
+  const items=S.journal.filter(inFilter).map(t=>({t,A:analyzeTrade(t),mins:minutesOf(t.etime)})).filter(o=>o.A.pnl!==null);
+  if(!items.length){host.innerHTML=`<div class="hint" style="margin:0">No completed trades.</div>`;if(eq)eq.innerHTML="";return;}
   items.sort((a,b)=>{if(a.mins===null&&b.mins===null)return 0;if(a.mins===null)return 1;if(b.mins===null)return -1;return a.mins-b.mins;});
-  let n=items.length,wins=0,losses=0,gw=0,gl=0,sumR=0,rn=0,best=-1e9,worst=1e9,net=0,peak=0,maxDD=0,run=0;
-  const cum=[];
-  items.forEach(o=>{const p=o.A.pnl;net+=p;run+=p;cum.push(run);if(p>0){wins++;gw+=p;}else if(p<0){losses++;gl+=-p;}best=Math.max(best,p);worst=Math.min(worst,p);if(o.A.rMult!=null){sumR+=o.A.rMult;rn++;}peak=Math.max(peak,run);maxDD=Math.max(maxDD,peak-run);});
-  const winRate=wins/n, avgWin=wins?gw/wins:0, avgLoss=losses?gl/losses:0, RR=avgLoss?avgWin/avgLoss:null, pf=gl?gw/gl:null, exp=net/n, avgR=rn?sumR/rn:null;
-  const rows=[
-    ["Trades",String(n)],["Net P/L",money(net)],["Win rate",(winRate*100).toFixed(0)+"%"],
-    ["Reward : risk",RR!=null?RR.toFixed(2)+" : 1":"—"],["Expectancy/trade",money(exp)],
-    ["Profit factor",pf!=null?pf.toFixed(2):"—"],["Avg R",avgR!=null?avgR.toFixed(2):"—"],
-    ["Best / Worst",money(best)+" / "+money(worst)],["Max drawdown",money(-maxDD)]
-  ];
-  host.innerHTML=rows.map(r=>{const neg=typeof r[1]==="string"&&r[1].indexOf("-$")===0;return `<div class="row"><span>${r[0]}</span><b class="${neg?'neg':''}">${r[1]}</b></div>`;}).join("");
+  let net=0,run=0,peak=0,dd=0,best=-1e9,worst=1e9,cum=[],wins=0,gw=0,gl=0;
+  items.forEach(o=>{const p=o.A.pnl;net+=p;run+=p;cum.push(run);peak=Math.max(peak,run);dd=Math.max(dd,peak-run);best=Math.max(best,p);worst=Math.min(worst,p);if(p>0){wins++;gw+=p;}else gl+=-p;});
+  const n=items.length;
+  host.innerHTML=[["Trades",String(n)],["Net P/L",money(net)],["Win rate",(wins/n*100).toFixed(0)+"%"],
+    ["Profit factor",gl?(gw/gl).toFixed(2):"—"],["Best / Worst",money(best)+" / "+money(worst)],["Max drawdown",money(-dd)],
+    ["Return on equity",((net/(num(S.risk.equity)||1))*100).toFixed(1)+"%"],["Avg trade",money(net/n)]
+  ].map(r=>`<div class="row"><span>${r[0]}</span><b class="${String(r[1]).indexOf("-$")===0?'neg':''}">${r[1]}</b></div>`).join("");
   if(eq){
     const W=320,H=90,pad=4,min=Math.min(0,...cum),max=Math.max(0,...cum),rng=(max-min)||1;
-    const pts=cum.map((v,i)=>{const x=pad+(cum.length===1?0:i/(cum.length-1))*(W-2*pad);const y=H-pad-((v-min)/rng)*(H-2*pad);return x.toFixed(1)+","+y.toFixed(1);}).join(" ");
-    const zeroY=(H-pad-((0-min)/rng)*(H-2*pad)).toFixed(1);
-    const col=net>=0?"var(--long)":"var(--short)";
-    eq.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none"><line x1="0" y1="${zeroY}" x2="${W}" y2="${zeroY}" stroke="var(--line2)" stroke-width="1" stroke-dasharray="3 3"/><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2"/></svg>`;
+    const p=cum.map((v,i)=>{const x=pad+(cum.length===1?0:i/(cum.length-1))*(W-2*pad);const y=H-pad-((v-min)/rng)*(H-2*pad);return x.toFixed(1)+","+y.toFixed(1);}).join(" ");
+    const z=(H-pad-((0-min)/rng)*(H-2*pad)).toFixed(1);
+    eq.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none"><line x1="0" y1="${z}" x2="${W}" y2="${z}" stroke="var(--line2)" stroke-dasharray="3 3"/><polyline points="${p}" fill="none" stroke="${net>=0?'var(--long)':'var(--short)'}" stroke-width="2"/></svg>`;
   }
 }
-function renderAll(){renderTop();renderReads();renderDerived();renderSetups();renderWhatif();renderJournal();renderPerf();renderTimeline();renderBacktest();save();}
+function renderAll(){renderTop();renderReads();renderSetups();renderWhatif();renderJournal();renderPerf();renderTimeline();renderBacktest();save();}
 
-/* ---------- performance & tuning ---------- */
-const PERF_FIELDS=[
-  ["trades","# trades"],["wins","# winning trades"],["losses","# losing trades"],
-  ["gwin","Gross win $"],["gloss","Gross loss $ (positive)"],
-  ["lwin","Largest win $"],["lloss","Largest loss $ (positive)"],
-  ["wmin","Avg winner hold (min)"],["lmin","Avg loser hold (min)"],
-  ["fees","Fees & comm $"],["am","A.M. P/L $ (optional)"],["pm","P.M. P/L $ (optional)"],
-];
-function renderPerfInputs(){
-  document.getElementById("perfGrid").innerHTML=PERF_FIELDS.map(f=>
-    `<div class="f"><label>${f[1]}</label>
-      <input inputmode="decimal" data-perf="${f[0]}" value="${S.perf[f[0]]??''}" placeholder="—"></div>`).join("");
-}
-function perfDiag(){
-  const p=S.perf, n=num;
-  const trades=n(p.trades), wins=n(p.wins), losses=n(p.losses);
-  const gwin=n(p.gwin), gloss=n(p.gloss), lwin=n(p.lwin), lloss=n(p.lloss);
-  const wmin=n(p.wmin), lmin=n(p.lmin), fees=n(p.fees)||0;
-  const avgWin=(gwin!==null&&wins)?gwin/wins:null;
-  const avgLoss=(gloss!==null&&losses)?gloss/losses:null;
-  const netEx=(gwin!==null&&gloss!==null)?gwin-gloss:null;
-  const net=netEx!==null?netEx-fees:null;
-  const winRate=(wins!==null&&trades)?wins/trades:null;
-  const RR=(avgWin!==null&&avgLoss)?avgWin/avgLoss:null;
-  const exp=(netEx!==null&&trades)?netEx/trades:null;
-  const pf=(gwin!==null&&gloss)?gwin/gloss:null;
-  const beWR=(RR!==null)?1/(1+RR):null;
-  const hold=(lmin!==null&&wmin)?lmin/wmin:null;
-  const cap$=(num(S.risk.maxRisk)||0)*(num(S.risk.cap)||0);
-  const lossVsCap=(lloss!==null&&cap$)?lloss/cap$:null;
-  const winR=(avgWin!==null&&num(S.risk.maxRisk))?avgWin/num(S.risk.maxRisk):null;
-  return {trades,wins,losses,gwin,gloss,lwin,lloss,wmin,lmin,fees,avgWin,avgLoss,netEx,net,winRate,RR,exp,pf,beWR,hold,cap$,lossVsCap,winR,am:n(p.am),pm:n(p.pm)};
-}
-function renderPerf(){
-  const host=document.getElementById("perfScore"); if(!host)return;
-  const pm=document.getElementById("perfMkt"); if(pm)pm.textContent="· "+(S.journalFilter||"All");
-  const d=perfDiag();
-  const pct=v=>v===null?"—":(v*100).toFixed(0)+"%";
-  const x=v=>v===null?"—":v.toFixed(2);
-  const dol=v=>v===null?"—":money(v);
-  const rows=[
-    ["Net P/L (ex fees)", d.netEx, dol(d.netEx)],
-    ["Total P/L (inc fees)", d.net, dol(d.net)],
-    ["Win rate", null, pct(d.winRate)],
-    ["Reward : risk", null, d.RR===null?"—":x(d.RR)+" : 1"],
-    ["Expectancy / trade", d.exp, dol(d.exp)],
-    ["Profit factor", null, x(d.pf)],
-    ["Break-even win rate", null, pct(d.beWR)],
-    ["Loser / winner hold", null, d.hold===null?"—":d.hold.toFixed(1)+"×"],
-    ["Worst loss vs cap", null, d.lossVsCap===null?"—":d.lossVsCap.toFixed(1)+"×"],
-  ];
-  host.innerHTML=rows.map(r=>{
-    const cls=r[1]===null?"":(r[1]>=0?"pos":"neg");
-    return `<div class="row"><span>${r[0]}</span><b class="${cls}">${r[2]}</b></div>`;
-  }).join("");
-  // recommendations
-  const recs=[];
-  const rs=runnerStats();
-  const ss=setupStats();
-  const ps=document.getElementById("perfSetups");
-  if(ps){
-    ps.innerHTML = ss.length
-      ? `<table class="wi"><thead><tr><th>Setup</th><th>n</th><th>Win%</th><th>Net</th><th>avgR</th></tr></thead><tbody>${ss.map(s=>`<tr><td>${s.key}</td><td>${s.n}</td><td>${(s.winRate*100).toFixed(0)}%</td><td style="color:${s.net>=0?'var(--long)':'var(--short)'}">${money(s.net)}</td><td>${s.avgR!=null?s.avgR.toFixed(2):'—'}</td></tr>`).join("")}</tbody></table>`
-      : `<div class="hint" style="margin-top:0">Log trades (set each one's Reference) to see which setups actually pay.</div>`;
-  }
-  if(rs.n){
-    host.insertAdjacentHTML("beforeend",
-      `<div class="row"><span>Runner hit rate (3.5R)</span><b class="${rs.hitRate>=0.4?'pos':'neg'}">${(rs.hitRate*100).toFixed(0)}% · avg ${rs.avgR.toFixed(2)}R</b></div>`);
-  }
-  const mr=num(S.risk.maxRisk)||50, ptp=num(S.risk.ptpPct)||25;
-  if(d.lloss!==null&&d.cap$&&d.lossVsCap>1.15)
-    recs.push(["high","Cap your worst-case loss",
-      `Largest loss −$${d.lloss.toFixed(2)} is ${d.lossVsCap.toFixed(1)}× your $${d.cap$.toFixed(0)} intended max (maxRisk × cap)`+
-      (d.avgWin?`, ≈ ${Math.round(d.lloss/d.avgWin)} average winners`:"")+
-      `. Drop 'Skip cap ×' toward 1.0 so the engine won't take a setup needing more than $${mr} of stop, and/or switch to a tighter ATR stop (smaller ATR ×). This is the single biggest leak.`]);
-  if(d.hold!==null&&d.hold>=3)
-    recs.push(["high","Cut the slow losers",
-      `Losers run ${d.hold.toFixed(1)}× longer than winners (${d.lmin}m vs ${d.wmin}m). Winners resolve in ~${d.wmin}m; a trade not near +1R by ~${Math.ceil(d.wmin*2)}m is usually wrong. The v5 engine has no time-stop — add a bar/'minutes-in-trade' exit to stop the bleed.`]);
-  if(d.pf!==null&&d.pf<1)
-    recs.push(["high","Currently net-negative",
-      `Profit factor ${x(d.pf)} (<1)`+(d.exp!==null?`, expectancy ${dol(d.exp)}/trade`:"")+`. The two levers below — bigger winners and a higher win rate — are how this flips.`]);
-  if(d.winRate!==null&&d.beWR!==null&&d.winRate<d.beWR)
-    recs.push(["med","Win rate below the break-even line",
-      `At ${x(d.RR)} : 1 reward:risk you need ${pct(d.beWR)} wins to break even; you're at ${pct(d.winRate)}. Close the gap by raising R or filtering entries.`]);
-  if(d.RR!==null&&d.RR<1.3)
-    recs.push(["med","Let winners run",
-      `Avg win ≈ avg loss (${x(d.RR)} : 1). Winners average $${d.avgWin.toFixed(2)}`+(d.winR?` ≈ ${d.winR.toFixed(1)}R`:"")+
-      ` while the plan allows 3.5R — profit is being taken too early. Lower the PTP scale-out (now ${ptp}%) so more size reaches TP1/Full, or trail the runner instead of scaling.`]);
-  if(d.winRate!==null&&d.winRate<0.4)
-    recs.push(["med","Filter weaker entries",
-      `${pct(d.winRate)} of trades win and roughly half of contracts scratch at breakeven — setups arm then fail. Raise minScore 2 → 3, or require the nested 15m/5m zone (needLTF) so only cleaner sweeps fire.`]);
-  if(d.am!==null&&d.am<0&&(d.pm===null||d.pm>=d.am))
-    recs.push(["info","Mornings are your worst window",
-      `A.M. ${dol(d.am)}${d.pm!==null?` vs P.M. ${dol(d.pm)}`:""}. Consider starting the trade window 15–30 min after the open, or skipping the first push where the big losses cluster.`]);
-  if(d.trades!==null&&d.trades<30)
-    recs.push(["info","Too small a sample to trust",
-      `${d.trades} trades — one outlier drives the whole result. Log 30–50+ before concluding, and change ONE parameter at a time (fork the alerts, restart the count) so you can tell what actually moved the needle.`]);
-  if(rs.n>=3&&rs.hitRate<0.35)
-    recs.push(["med","Your 3.5R target may be too greedy",
-      `The runner reaches Full 3.5R only ${(rs.hitRate*100).toFixed(0)}% of the time (${rs.full}/${rs.n}, avg ${rs.avgR.toFixed(2)}R) — most runners scratch at breakeven. Test a nearer Full R (e.g. 3.5 → 2.5) or trail the runner from TP1 instead of a fixed target, so the 25% runner slice actually banks something.`]);
-  if(rs.n>=3&&rs.hitRate>=0.6)
-    recs.push(["info","Runner target isn't the constraint",
-      `The runner hits 3.5R ${(rs.hitRate*100).toFixed(0)}% of the time (avg ${rs.avgR.toFixed(2)}R) — it's paying. If anything, test letting a slice run past 3.5R or widening the full target before you touch it.`]);
-  if(ss.length>=2){
-    const best=ss[0], worst=ss[ss.length-1];
-    if(best.net>0&&worst.net<0&&best.n>=3&&worst.n>=3)
-      recs.push(["med","Lean into what pays",
-        `${best.key} is net ${money(best.net)} (${(best.winRate*100).toFixed(0)}% over ${best.n}) while ${worst.key} is ${money(worst.net)} (${(worst.winRate*100).toFixed(0)}% over ${worst.n}). Trade the first more; tighten the filters on the second or drop it.`]);
-  }
-  if(!recs.length)
-    recs.push(["good","Nothing flagged","Fill the fields above and diagnostics will surface any leaks."]);
-  const order={high:0,med:1,info:2,good:3};
-  recs.sort((a,b)=>order[a[0]]-order[b[0]]);
-  document.getElementById("perfRecs").innerHTML=recs.map(r=>
-    `<div class="rec ${r[0]}"><div class="rt">${r[1]}</div><div class="rb">${r[2]}</div></div>`).join("");
-}
-
-/* ---------- auto-pull today's levels via web search ---------- */
-const UNDER={MES:"E-mini S&P 500 futures (ES, front month)",
-             MNQ:"E-mini Nasdaq-100 futures (NQ, front month)",
-             MGC:"COMEX gold futures (GC, front month)"};
-/* ---------- unified JSON ingest (levels + trades) ---------- */
+/* ---------- relay ingest ---------- */
 let lastPayload=null;
-function rootSym(s){if(!s)return "MES";const up=String(s).toUpperCase();for(const k of ["MES","MNQ","MGC"])if(up.indexOf(k)===0)return k;return up;}
 function normalizeTrade(tr){
   const nn=v=>(v===null||v===undefined||v==="")?null:(isNaN(parseFloat(v))?v:parseFloat(v));
   const r=rootSym(tr.sym);
-  return {
-    sym: SPECS[r]?r:"MES",
-    dir: tr.dir==="Short"?"Short":"Long",
-    mode: tr.mode==="Continuation"?"Continuation":"Reversal",
-    ref: tr.ref!=null?String(tr.ref):"Prior-day",
-    entry:nn(tr.entry), swept:nn(tr.swept), level:nn(tr.level), atr:nn(tr.atr),
-    etime: tr.etime!=null?String(tr.etime):"", dur:nn(tr.dur),
-    date: tr.date!=null?String(tr.date):"",
-    exitMode: tr.exitMode==="Scaled"?"Scaled":"Single",
-    ct:nn(tr.ct), exit:nn(tr.exit),
-    ptpQ:nn(tr.ptpQ), ptpPx:nn(tr.ptpPx), tp1Q:nn(tr.tp1Q), tp1Px:nn(tr.tp1Px), runQ:nn(tr.runQ), runPx:nn(tr.runPx),
-    ptpTime: tr.ptpTime!=null?String(tr.ptpTime):"", tp1Time: tr.tp1Time!=null?String(tr.tp1Time):"", runTime: tr.runTime!=null?String(tr.runTime):"",
-    flags:(tr.flags&&typeof tr.flags==="object")?tr.flags:{},
-    note: tr.note!=null?String(tr.note):""
-  };
+  return {sym:SPECS[r]?r:"MES",dir:tr.dir==="Short"?"Short":"Long",
+    entry:nn(tr.entry),wick:nn(tr.wick),ema:nn(tr.ema),atr:nn(tr.atr),
+    ct:nn(tr.ct),exit:nn(tr.exit),exitReason:tr.exitReason!=null?String(tr.exitReason):"",
+    date:tr.date!=null?String(tr.date):"",etime:tr.etime!=null?String(tr.etime):"",dur:nn(tr.dur),
+    flags:(tr.flags&&typeof tr.flags==="object")?tr.flags:{},note:tr.note!=null?String(tr.note):""};
 }
 function applyPayload(j){
-  if(!j||typeof j!=="object") throw new Error("bad payload");
+  if(!j||typeof j!=="object")throw new Error("bad");
   let lv;
-  if(j.levels&&typeof j.levels==="object"){
-    const L=j.levels;
-    if(L[S.market]||L.MES||L.MNQ||L.MGC||L._last){
-      lv = L[S.market] || L._last || L.MES || L.MNQ || L.MGC || {};   // per-symbol map
-    } else { lv = L; }                                                // flat levels object
-  } else { lv = j; }                                                  // flat fallback
-  let filled=0, missing=[];
-  ["pdh","pdl","pdc","onh","onl","cur","atr","ema","buy"].forEach(k=>{
-    const v=parseFloat(lv[k]);
-    if(lv[k]!==null&&lv[k]!==undefined&&!isNaN(v)){ S.mkt[k]=v; filled++; } else missing.push(k);
-  });
-  if(lv.sym&&SPECS[lv.sym]) S.market=lv.sym;
-  let added=0, updated=0;
+  if(j.levels&&typeof j.levels==="object"){const L=j.levels;
+    lv=(L[S.market]||L.MES||L.MNQ||L.MGC||L._last)?(L[S.market]||L._last||L.MES||L.MNQ||L.MGC||{}):L;}
+  else lv=j;
+  let filled=0,missing=[];
+  ["cur","ema","atr","htfEma","emaPrev","volRatio"].forEach(k=>{const v=parseFloat(lv[k]);
+    if(lv[k]!==null&&lv[k]!==undefined&&!isNaN(v)){S.mkt[k]=v;filled++;}else missing.push(k);});
+  let added=0,updated=0;
   const trades=Array.isArray(j.trades)?j.trades:(j.trade?[j.trade]:[]);
-  trades.forEach(tr=>{
-    if(!tr||typeof tr!=="object")return;
-    const id=tr.id!=null?String(tr.id):null;
-    const norm=normalizeTrade(tr);
-    let idx=-1;
-    if(id) idx=S.journal.findIndex(e=>e.id===id);
-    if(idx>=0){ S.journal[idx]=Object.assign({},S.journal[idx],norm,{id,_open:S.journal[idx]._open}); updated++; }
-    else { S.journal.push(Object.assign({id,_open:false},norm)); added++; }
-  });
-  return {filled,missing,added,updated,asof:(lv.asof||j.asof||null),src:(lv.src||j.src||null)};
+  trades.forEach(tr=>{if(!tr||typeof tr!=="object")return;
+    const id=tr.id!=null?String(tr.id):null,norm=normalizeTrade(tr);
+    const idx=id?S.journal.findIndex(e=>e.id===id):-1;
+    if(idx>=0){S.journal[idx]=Object.assign({},S.journal[idx],norm,{id,_open:S.journal[idx]._open});updated++;}
+    else{S.journal.push(Object.assign({id,_open:false},norm));added++;}});
+  return {filled,missing,added,updated,asof:lv.asof||null};
 }
 async function pullLevels(){
-  const btn=document.getElementById("pullBtn"), note=document.getElementById("pullNote");
-  const label=btn.textContent;
-  btn.disabled=true; btn.textContent="⟳ Loading…";
-  const viaRelay=!!(S.relay&&/^https?:\/\//i.test(S.relay));
-  note.className="pullnote";
-  note.textContent=viaRelay?"Reading your data from the relay…":"Searching the web for the latest "+S.market+" session levels…";
+  const btn=document.getElementById("pullBtn"),note=document.getElementById("pullNote");
+  if(!(S.relay&&/^https?:\/\//i.test(S.relay))){note.className="pullnote err";note.textContent="Set a Relay URL to pull.";return;}
+  btn.disabled=true;const lbl=btn.textContent;btn.textContent="⟳ …";
   try{
-    let j;
-    if(viaRelay){
-      const r=await fetch(S.relay,{cache:"no-store"});
-      j=await r.json();
-      if(!j||Object.keys(j).length===0) throw new Error("relay-empty");
-    } else {
-      const sys="You are a futures market-data extractor. Search the web for the most recent session data for "+UNDER[S.market]+
-        ". Micro contracts trade at the same price as their full-size parent, so use the parent's levels. "+
-        "Return ONLY a raw JSON object — no prose, no markdown fences. Keys (use null when you cannot find a reliable value): "+
-        "pdh=prior regular-session high, pdl=prior regular-session low, pdc=prior close/settle, "+
-        "onh=overnight/Globex high, onl=overnight/Globex low, cur=latest price, "+
-        "atr=approx 14-day ATR in points, ema=approx 50-period 4-hour EMA in points, "+
-        "asof=short date/time string of the data, src=short source name. "+
-        "ES and NQ are index points; gold is dollars per ounce. Output valid JSON only.";
-      const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"claude-sonnet-4-6", max_tokens:1000, system:sys,
-          messages:[{role:"user",content:"Get the latest "+S.market+" ("+UNDER[S.market]+") session levels now, as JSON."}],
-          tools:[{type:"web_search_20250305", name:"web_search"}]})
-      });
-      const data=await res.json();
-      const text=(data.content||[]).map(b=>b&&b.type==="text"?b.text:"").join("\n");
-      const m=text.match(/\{[\s\S]*\}/);
-      if(!m) throw new Error("no-json");
-      j=JSON.parse(m[0]);
-    }
-    const r=applyPayload(j);
-    lastPayload=j;
-    document.querySelectorAll('#mktSeg button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.market));
-    renderMktInputs(); renderAll();
-    note.className="pullnote";
-    const tag=viaRelay?"Relay":"Web";
-    note.innerHTML="Filled <b>"+r.filled+"</b> level field"+(r.filled===1?"":"s")+
-      (r.added||r.updated?` · <b>${r.added}</b> new / <b>${r.updated}</b> updated trade`+((r.added+r.updated)===1?"":"s"):"")+
-      " from "+tag+(r.asof?(" · as of "+r.asof):"")+". "+
-      (viaRelay?"Live from your strategy.":"<b>Web-sourced &amp; delayed — verify before trading.</b>")+
-      (r.missing.length?(" Missing levels: "+r.missing.join(", ")+"."):"");
-  }catch(err){
-    note.className="pullnote err";
-    note.innerHTML=viaRelay
-      ? "Relay didn't return data yet. Check the Worker is deployed and an emitter alert has fired at least once. Meanwhile, enter data by hand."
-      : "Couldn't auto-fill (needs a connection, and open-web futures data is limited). Enter Section 1 by hand; everything else still works.";
-  }finally{
-    btn.disabled=false; btn.textContent=label;
-  }
+    const r=await fetch(S.relay,{cache:"no-store"});const j=await r.json();lastPayload=j;
+    const res=applyPayload(j);renderMktInputs();renderAll();
+    note.className="pullnote";note.innerHTML=`Filled <b>${res.filled}</b> field(s)`+((res.added||res.updated)?` · <b>${res.added}</b> new / <b>${res.updated}</b> updated trade(s)`:"")+(res.asof?` · ${res.asof}`:"")+".";
+  }catch(e){note.className="pullnote err";note.textContent="Relay unreachable or empty.";}
+  finally{btn.disabled=false;btn.textContent=lbl;}
 }
-
-/* ---------- live polling (near real-time) ---------- */
 let liveTimer=null;
 function editing(){const a=document.activeElement;return !!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||""));}
 async function livePoll(){
-  if(!(S.relay&&/^https?:\/\//i.test(S.relay)))return;
-  if(editing())return;                       // never re-render mid-typing
+  if(!(S.relay&&/^https?:\/\//i.test(S.relay)))return; if(editing())return;
   const ln=document.getElementById("liveNote");
-  try{
-    const r=await fetch(S.relay,{cache:"no-store"});
-    const j=await r.json();
-    lastPayload=j;
-    const res=applyPayload(j);
-    document.querySelectorAll('#mktSeg button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.market));
-    renderMktInputs(); renderAll();
-    if(ln){const ts=new Date().toLocaleTimeString();
-      ln.className="pullnote";
-      ln.innerHTML=`● live · synced ${ts}`+((res.added||res.updated)?` · +${res.added} new / ${res.updated} upd`:"");}
-  }catch(e){ if(ln){ln.className="pullnote err";ln.textContent="● live · relay unreachable, retrying…";} }
+  try{const r=await fetch(S.relay,{cache:"no-store"});const j=await r.json();lastPayload=j;
+    const res=applyPayload(j);renderMktInputs();renderAll();
+    if(ln){ln.className="pullnote";ln.innerHTML=`● live · synced ${new Date().toLocaleTimeString()}`+((res.added||res.updated)?` · +${res.added}/${res.updated}`:"");}
+  }catch(e){if(ln){ln.className="pullnote err";ln.textContent="● live · relay unreachable";}}
 }
 function setLive(on){
-  const b=document.getElementById("liveBtn"), ln=document.getElementById("liveNote");
+  const b=document.getElementById("liveBtn"),ln=document.getElementById("liveNote");
   if(liveTimer){clearInterval(liveTimer);liveTimer=null;}
-  if(on&&!(S.relay&&/^https?:\/\//i.test(S.relay))){
-    if(ln){ln.className="pullnote err";ln.textContent="Set a Relay URL first to go live.";}
-    S.live=false; if(b)b.classList.remove("on"); save(); return;
-  }
-  S.live=on; if(b)b.classList.toggle("on",on);
-  if(on){ livePoll(); liveTimer=setInterval(livePoll,20000);
-    if(ln&&!ln.textContent){ln.className="pullnote";ln.textContent="● live · polling every 20s";} }
-  else if(ln){ln.className="pullnote";ln.textContent="live off";}
+  if(on&&!(S.relay&&/^https?:\/\//i.test(S.relay))){if(ln){ln.className="pullnote err";ln.textContent="Set a Relay URL first.";}S.live=false;if(b)b.classList.remove("on");save();return;}
+  S.live=on;if(b)b.classList.toggle("on",on);
+  if(on){livePoll();liveTimer=setInterval(livePoll,20000);}else if(ln){ln.className="pullnote";ln.textContent="live off";}
   save();
 }
 
 /* ---------- events ---------- */
 document.getElementById("mktSeg").addEventListener("click",e=>{
   const b=e.target.closest("button[data-m]");if(!b)return;
-  S.market=b.dataset.m;
-  [...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b));
-  if(lastPayload){ try{applyPayload(lastPayload);}catch(err){} renderMktInputs(); }
+  S.market=b.dataset.m;[...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b));
+  applyPreset(); renderRiskInputs();
+  if(lastPayload){try{applyPayload(lastPayload);}catch(err){}renderMktInputs();}
   renderAll();
 });
 document.body.addEventListener("input",e=>{
   const t=e.target;
   if(t.id==="relayUrl"){S.relay=t.value.trim();save();return;}
-  if(t.dataset.perf){S.perf[t.dataset.perf]=t.value; renderPerf(); save(); return;}
-  if(t.dataset.mkt){S.mkt[t.dataset.mkt]=t.value; renderTop();renderReads();renderDerived();renderSetups();renderWhatif();save();}
-  else if(t.dataset.risk){S.risk[t.dataset.risk]=num(t.value); const f=document.querySelector('#riskGrid input[disabled]'); if(f)f.value=100-S.risk.ptpPct-S.risk.tp1Pct; renderSetups();renderWhatif();save();}
-  else if(t.dataset.setup!==undefined){S.setups[+t.dataset.setup][t.dataset.k]=t.value; renderSetups();save();}
-  else if(t.dataset.j!==undefined){S.journal[+t.dataset.j][t.dataset.k]=t.value; refreshCard(+t.dataset.j); save();}
+  if(t.dataset.mkt){S.mkt[t.dataset.mkt]=t.value;renderTop();renderReads();renderSetups();renderWhatif();save();}
+  else if(t.dataset.risk){S.risk[t.dataset.risk]=num(t.value);renderReads();renderSetups();renderWhatif();renderJournal();renderPerf();save();}
+  else if(t.dataset.setup!==undefined){S.setups[+t.dataset.setup][t.dataset.k]=t.value;renderSetups();save();}
+  else if(t.dataset.j!==undefined){S.journal[+t.dataset.j][t.dataset.k]=t.value;refreshCard(+t.dataset.j);save();}
 });
 document.body.addEventListener("change",e=>{
   const t=e.target;
-  if(t.dataset.jsym!==undefined&&t.tagName==="SELECT"){S.journal[+t.dataset.jsym].sym=t.value;refreshCard(+t.dataset.jsym);save();}
-  if(t.dataset.jref!==undefined&&t.tagName==="SELECT"){S.journal[+t.dataset.jref].ref=t.value;renderJournal();renderPerf();save();}
+  if(t.dataset.jsym!==undefined){S.journal[+t.dataset.jsym].sym=t.value;renderJournal();renderPerf();renderTimeline();renderBacktest();save();}
+  if(t.dataset.jexit!==undefined){S.journal[+t.dataset.jexit].exitReason=t.value;renderJournal();renderPerf();renderTimeline();save();}
 });
 document.body.addEventListener("click",e=>{
-  const mode=e.target.closest("button[data-mode]");
-  if(mode){S.stopMode=mode.dataset.mode;
-    [...mode.parentElement.children].forEach(x=>x.classList.toggle("on",x===mode));
-    renderSetups();save();return;}
+  const opt=e.target.closest("[data-opt]");
+  if(opt){S.opts[opt.dataset.opt]=!S.opts[opt.dataset.opt];opt.classList.toggle("on");
+    if(opt.dataset.opt==="usePreset"||opt.dataset.opt==="forceRR"){applyPreset();renderRiskInputs();}
+    renderAll();save();return;}
   const dir=e.target.closest(".dirtog button[data-dir]");
-  if(dir){const i=+dir.parentElement.dataset.si;S.setups[i].dir=dir.dataset.dir;renderSetups();save();return;}
-  // journal: flag chips
-  const jf=e.target.closest(".jflag[data-jflag]");
-  if(jf){const i=+jf.dataset.jflag, k=jf.dataset.flag;S.journal[i].flags=S.journal[i].flags||{};
-    S.journal[i].flags[k]=!S.journal[i].flags[k];jf.classList.toggle("on");refreshCard(i);save();return;}
-  // journal: direction toggle
+  if(dir){S.setups[+dir.parentElement.dataset.si].dir=dir.dataset.dir;renderSetups();save();return;}
   const jd=e.target.closest("[data-jdir] button");
-  if(jd){const seg=jd.parentElement,i=+seg.dataset.jdir;S.journal[i].dir=jd.dataset.d;
-    [...seg.children].forEach(x=>x.classList.remove("onL","onS"));
-    jd.classList.add(jd.dataset.d==="Long"?"onL":"onS");refreshCard(i);save();return;}
-  // journal: mode toggle (rebuilds card for retest flag)
-  const jm=e.target.closest("[data-jmode] button");
-  if(jm){const i=+jm.parentElement.dataset.jmode;S.journal[i].mode=jm.dataset.mo;S.journal[i]._open=true;renderJournal();save();return;}
-  const jx=e.target.closest("[data-jexit] button");
-  if(jx){const i=+jx.parentElement.dataset.jexit;S.journal[i].exitMode=jx.dataset.em;S.journal[i]._open=true;renderJournal();save();return;}
-  // journal: delete
-  const jdel=e.target.closest("[data-jdel]");
-  if(jdel){S.journal.splice(+jdel.dataset.jdel,1);renderJournal();save();return;}
-  if(e.target.id==="addJ"){S.journal.unshift({sym:S.market,dir:"Long",mode:"Reversal",entry:null,swept:null,level:null,exit:null,ct:1,atr:num(S.mkt.atr),flags:{},note:"",_open:true});renderJournal();save();return;}
-  if(e.target.id==="pullBtn"){pullLevels();return;}
+  if(jd){const i=+jd.parentElement.dataset.jdir;S.journal[i].dir=jd.dataset.d;S.journal[i]._open=true;renderJournal();renderPerf();save();return;}
+  const jf=e.target.closest("[data-jflag]");
+  if(jf){const i=+jf.dataset.jflag;S.journal[i].flags=S.journal[i].flags||{};S.journal[i].flags[jf.dataset.flag]=!S.journal[i].flags[jf.dataset.flag];jf.classList.toggle("on");refreshCard(i);save();return;}
+  const del=e.target.closest("[data-jdel]");
+  if(del){S.journal.splice(+del.dataset.jdel,1);renderAll();return;}
   const mf=e.target.closest("#jFilter button[data-mf]");
-  if(mf){S.journalFilter=mf.dataset.mf;renderJournal();renderTimeline();renderPerf();renderBacktest();save();return;}
+  if(mf){S.journalFilter=mf.dataset.mf;renderJournal();renderPerf();renderTimeline();renderBacktest();save();return;}
+  if(e.target.id==="addJ"){S.journal.push({sym:S.market,dir:"Long",entry:null,wick:null,ema:num(S.mkt.ema),atr:num(S.mkt.atr),ct:1,exit:null,exitReason:"TP",date:"",etime:"",dur:null,flags:{},note:"",_open:true});renderAll();return;}
+  if(e.target.id==="pullBtn"){pullLevels();return;}
   if(e.target.id==="liveBtn"){setLive(!S.live);return;}
   if(e.target.id==="exportTrades"){
-    const data=JSON.stringify({levels:{},trades:S.journal});
-    const n=document.getElementById("btNote");
-    try{ navigator.clipboard.writeText(data); if(n){n.className="pullnote";n.textContent="Copied "+S.journal.length+" trades to clipboard — paste into Notes to back up, or the import box to restore.";} }
-    catch(err){ if(n){n.className="pullnote";n.innerHTML="Select &amp; copy to back up:<br><textarea style='width:100%;height:70px;font-size:10px' onclick='this.select()'>"+data.replace(/</g,"&lt;")+"</textarea>";} }
-    return;
-  }
-  if(e.target.id==="jsonApply"){
-    const ta=document.getElementById("jsonIn"), note=document.getElementById("jsonNote");
-    try{
-      const j=JSON.parse(ta.value);
-      const r=applyPayload(j);
-      document.querySelectorAll('#mktSeg button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.market));
-      renderMktInputs(); renderAll();
-      note.className="pullnote";
-      note.innerHTML=`Imported <b>${r.filled}</b> level field(s), <b>${r.added}</b> new / <b>${r.updated}</b> updated trade(s).`;
-    }catch(err){ note.className="pullnote err"; note.textContent="Invalid JSON — check the format against the example."; }
-    save(); return;
-  }
-  if(e.target.id==="syncPerf"){
-    const s=journalStats();
-    Object.keys(s).forEach(k=>{ S.perf[k]=(s[k]===null?"":s[k]); });
-    renderPerfInputs(); renderPerf(); save();
+    const data=JSON.stringify({levels:{},trades:S.journal});const n=document.getElementById("btNote");
+    try{navigator.clipboard.writeText(data);n.className="pullnote";n.textContent="Copied "+S.journal.length+" trades to clipboard.";}
+    catch(err){n.className="pullnote";n.innerHTML="<textarea style='width:100%;height:70px;font-size:10px' onclick='this.select()'>"+data.replace(/</g,"&lt;")+"</textarea>";}
     return;
   }
 });
-// preserve journal card open/closed state across re-renders
-document.body.addEventListener("toggle",e=>{
-  const d=e.target;
-  if(d&&d.dataset&&d.dataset.jt!==undefined){S.journal[+d.dataset.jt]._open=d.open;save();}
-},true);
+document.body.addEventListener("toggle",e=>{const d=e.target;if(d&&d.dataset&&d.dataset.jt!==undefined){S.journal[+d.dataset.jt]._open=d.open;save();}},true);
 
-/* ---------- boot ---------- */
 (async function(){
   await load();
-  if(!S.relay||!/^https?:\/\//i.test(S.relay)) S.relay="https://v5relay.658d5vgbms.workers.dev"; // baked-in default
-  S.live=true; // always start live on this hosted build
-  // set market segment active state after load
   document.querySelectorAll('#mktSeg button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.market));
   document.getElementById("relayUrl").value=S.relay||"";
-  renderMktInputs();renderRiskInputs();renderPerfInputs();renderAll();
-  pullLevels();   // auto-fill today's levels on open (safe to fail -> manual entry)
-  if(S.live) setLive(true);   // resume real-time polling if it was on
+  applyPreset();
+  renderMktInputs();renderRiskInputs();renderAll();
+  if(S.live)setLive(true);
 })();
 </script>
 </body>
 </html>
-
-
