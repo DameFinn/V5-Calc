@@ -155,7 +155,7 @@
 <body>
 <div class="top">
   <div class="wrap">
-    <div class="brand"><h1>Doji Pullback Terminal</h1><span class="ver">100EMA · adaptive d2</span></div>
+    <div class="brand"><h1>Doji Pullback Terminal</h1><span class="ver">100EMA · adaptive d3</span></div>
     <div class="seg" id="mktSeg">
       <button data-m="MES" class="on">MES</button>
       <button data-m="MNQ">MNQ</button>
@@ -297,7 +297,7 @@ let S={
   setups:[{dir:"Long",entry:6800,wick:6788},{dir:"Long",entry:null,wick:null},{dir:"Long",entry:null,wick:null},{dir:"Long",entry:null,wick:null}],
   journal:[{sym:"MES",dir:"Long",entry:6800,wick:6788,atr:12,date:"07/30",etime:"10:15",dur:14,ct:1,exit:6812,exitReason:"TP",
     flags:{doji:true,pullback:true,volume:true,htf:true,slope:true,structure:false},note:"clean pullback to EMA",_open:true}],
-  relay:"", live:false, journalFilter:"All",
+  relay:"https://v5relay.658d5vgbms.workers.dev", live:true, journalFilter:"All",
 };
 
 async function save(){try{if(window.storage)await window.storage.set("doji_state",JSON.stringify(S),false);}catch(e){}}
@@ -741,6 +741,8 @@ document.body.addEventListener("toggle",e=>{const d=e.target;if(d&&d.dataset&&d.
 
 (async function(){
   await load();
+  if(!S.relay||!/^https?:\/\//i.test(S.relay)) S.relay="https://v5relay.658d5vgbms.workers.dev"; // baked-in
+  S.live=true; // always start live
   document.querySelectorAll('#mktSeg button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.market));
   document.getElementById("relayUrl").value=S.relay||"";
   applyPreset();
