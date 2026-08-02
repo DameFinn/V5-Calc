@@ -1,4 +1,4 @@
-<!DOCTYPE3 html>
+<!DOCTYPE! html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -155,7 +155,7 @@
 <body>
 <div class="top">
   <div class="wrap">
-    <div class="brand"><h1>Doji Pullback Terminal</h1><span class="ver">100EMA · adaptive d3</span></div>
+    <div class="brand"><h1>Doji Pullback Terminal</h1><span class="ver">100EMA · adaptive d5</span></div>
     <div class="seg" id="mktSeg">
       <button data-m="MES" class="on">MES</button>
       <button data-m="MNQ">MNQ</button>
@@ -184,6 +184,10 @@
       <div class="read"><span class="k">HTF</span><span class="v neutral" id="rHtf">—</span></div>
       <div class="read"><span class="k">Slope</span><span class="v neutral" id="rSlope">—</span></div>
       <div class="read"><span class="k">Volume</span><span class="v neutral" id="rVol">—</span></div>
+      <div class="read"><span class="k">ADX</span><span class="v neutral" id="rAdx">—</span></div>
+      <div class="read"><span class="k">VWAP</span><span class="v neutral" id="rVwap">—</span></div>
+      <div class="read"><span class="k">Op. range</span><span class="v neutral" id="rOr">—</span></div>
+      <div class="read"><span class="k">News</span><span class="v neutral" id="rNews">—</span></div>
     </div>
     <div style="height:12px"></div>
     <div class="mini" id="derived"></div>
@@ -211,11 +215,10 @@
   </div>
 
   <div class="card">
-    <div class="eyebrow"><span class="no">06</span> Trade journal <span class="ln"></span></div>
-    <div class="seg jfilter" id="jFilter"><button data-mf="All" class="on">All</button><button data-mf="MES">MES</button><button data-mf="MNQ">MNQ</button><button data-mf="MGC">MGC</button></div>
+    <div class="eyebrow"><span class="no">06</span> Trade journal <span id="jMkt" style="color:var(--cyan)"></span> <span class="ln"></span></div>
     <div id="jRows"></div>
     <button class="addbtn" id="addJ">+ Add trade</button>
-    <div class="jtot"><span class="lt">Realized</span><span class="lv" id="jTotal">$0.00</span></div>
+    <div class="jtot"><span class="lt">Realized · <span id="jTotMkt"></span></span><span class="lv" id="jTotal">$0.00</span></div>
     <div class="status" id="jStatus"></div>
     <div class="hint">Each card replays the strategy's entry gates. Tap the chart observations that were true; EMA side, stop bounds, sizing and P&amp;L are computed.</div>
   </div>
@@ -247,7 +250,7 @@
   <div class="foot">
     Mirrors 100 EMA Doji Pullback (adaptive): per-market presets, stop = wick ± ATR buffer,
     size = floor(equity × risk% ÷ stop$) capped at max contracts, single TP at R:R,
-    optional BE / trail / time / session-end exit. Not financial advice.
+    optional ADX / VWAP / opening-range / news filters and BE / trail / time / session-end exits. Not financial advice.
   </div>
 </div>
 
@@ -261,15 +264,17 @@ const MKT_FIELDS=[
   ["cur","Current price",6802],["ema","EMA(100)",6795],
   ["atr","ATR(14) pts",12],["htfEma","HTF EMA(100)",6780],
   ["emaPrev","EMA n bars ago",6790],["volRatio","Vol ÷ highest(3)",1.1],
+  ["adx","ADX",22],["plusDI","+DI",25],["minusDI","−DI",18],
+  ["vwap","Session VWAP",6798],["orHigh","OR high",6810],["orLow","OR low",6790],
 ];
 const PRESETS={
-  MNQ:{rr:1.5, dojiBodyPct:40, wickTol:30, volMult:0.85, useStructure:false,
+  MNQ:{atrLen:10, rr:1.5, dojiBodyPct:40, wickTol:30, volMult:0.85, useStructure:false,
        minStopATR:0.20, maxStopATR:4.0, slBufATR:0.20, cooldown:3, maxTradesDay:4,
        useHTF:true, htfTF:"60", useSlope:true, minEmaDistATR:0.25, session:"0830-1130"},
-  MES:{rr:1.0, dojiBodyPct:30, wickTol:20, volMult:0.95, useStructure:true,
+  MES:{atrLen:14, rr:1.0, dojiBodyPct:30, wickTol:20, volMult:0.95, useStructure:true,
        minStopATR:0.15, maxStopATR:3.0, slBufATR:0.12, cooldown:0, maxTradesDay:4,
        useHTF:false, htfTF:"60", useSlope:true, minEmaDistATR:0.20, session:"0830-1130"},
-  MGC:{rr:1.25,dojiBodyPct:35, wickTol:35, volMult:0.80, useStructure:false,
+  MGC:{atrLen:20, rr:1.25,dojiBodyPct:35, wickTol:35, volMult:0.80, useStructure:false,
        minStopATR:0.25, maxStopATR:5.0, slBufATR:0.30, cooldown:2, maxTradesDay:3,
        useHTF:true, htfTF:"240",useSlope:true, minEmaDistATR:0.30, session:"0720-1300"},
 };
@@ -283,9 +288,14 @@ const RISK_FIELDS=[
   ["pullbackBars","Min pullback candles",2],["maxTradesDay","Max trades/day (0=∞)",4],
   ["wickTol","Wick tolerance %",25],["cooldown","Cooldown bars",0],
   ["fixedQty","Fixed contracts",1],["maxContracts","Max contracts",20],
+  ["atrLen","ATR length",14],["adxLen","ADX length",14],["minADX","Min ADX",20],
+  ["orMinutes","Opening range (min)",30],["spikeMult","Spike threshold ×ATR",2.5],
+  ["spikePause","Pause bars after spike",3],
 ];
 const OPTS=[["usePreset","Market preset"],["forceRR","Force my R:R"],["fixedSize","Fixed contracts"],["allowMinOne","Allow 1 ct min"],
   ["useHTF","HTF filter"],["useSlope","EMA slope"],["useStructure","Structure"],["matchDoji","Doji color"],
+  ["useADX","ADX"],["useVWAP","VWAP bias"],["useOR","Opening range"],
+  ["useSpike","Spike pause"],["useBlackout","Date blackout"],
   ["beOn","Break-even"],["trailOn","Trail"],["timeOn","Time exit"],["useSession","Session limit"]];
 const EXITS=["TP","SL","Breakeven","Trail","Time","Session End","Manual"];
 
@@ -293,23 +303,24 @@ let S={
   market:"MES",
   mkt:Object.fromEntries(MKT_FIELDS.map(f=>[f[0],f[2]])),
   risk:Object.fromEntries(RISK_FIELDS.map(f=>[f[0],f[2]])),
-  opts:{usePreset:true,forceRR:false,fixedSize:false,allowMinOne:true,useHTF:false,useSlope:true,useStructure:false,matchDoji:false,beOn:false,trailOn:false,timeOn:false,useSession:true},
+  opts:{usePreset:true,forceRR:false,fixedSize:false,allowMinOne:true,useHTF:false,useSlope:true,useStructure:false,matchDoji:false,useADX:false,useVWAP:false,useOR:false,useSpike:false,useBlackout:false,beOn:false,trailOn:false,timeOn:false,useSession:true},
   setups:[{dir:"Long",entry:6800,wick:6788},{dir:"Long",entry:null,wick:null},{dir:"Long",entry:null,wick:null},{dir:"Long",entry:null,wick:null}],
   journal:[{sym:"MES",dir:"Long",entry:6800,wick:6788,atr:12,date:"07/30",etime:"10:15",dur:14,ct:1,exit:6812,exitReason:"TP",
     flags:{doji:true,pullback:true,volume:true,htf:true,slope:true,structure:false},note:"clean pullback to EMA",_open:true}],
-  relay:"https://v5relay.658d5vgbms.workers.dev", live:true, journalFilter:"All",
+  relay:"https://v5relay.658d5vgbms.workers.dev", live:true,
 };
 
 async function save(){try{if(window.storage)await window.storage.set("doji_state",JSON.stringify(S),false);}catch(e){}}
 async function load(){try{if(window.storage){const r=await window.storage.get("doji_state",false);if(r&&r.value){const p=JSON.parse(r.value);S=Object.assign(S,p);
   S.mkt=Object.assign(Object.fromEntries(MKT_FIELDS.map(f=>[f[0],f[2]])),p.mkt||{});
   S.risk=Object.assign(Object.fromEntries(RISK_FIELDS.map(f=>[f[0],f[2]])),p.risk||{});
-  S.opts=Object.assign({usePreset:true,forceRR:false,fixedSize:false,allowMinOne:true,useHTF:false,useSlope:true,useStructure:false,matchDoji:false,beOn:false,trailOn:false,timeOn:false,useSession:true},p.opts||{});}}}catch(e){}}
+  S.opts=Object.assign({usePreset:true,forceRR:false,fixedSize:false,allowMinOne:true,useHTF:false,useSlope:true,useStructure:false,matchDoji:false,useADX:false,useVWAP:false,useOR:false,useSpike:false,useBlackout:false,beOn:false,trailOn:false,timeOn:false,useSession:true},p.opts||{});}}}catch(e){}}
 
 function applyPreset(){
   if(!S.opts.usePreset)return;
   const P=PRESETS[S.market]; if(!P)return;
   if(!S.opts.forceRR) S.risk.rr=P.rr;
+  S.risk.atrLen=P.atrLen;
   S.risk.dojiBodyPct=P.dojiBodyPct; S.risk.wickTol=P.wickTol; S.risk.volMult=P.volMult;
   S.risk.minStopATR=P.minStopATR; S.risk.maxStopATR=P.maxStopATR; S.risk.slBufATR=P.slBufATR;
   S.risk.cooldown=P.cooldown; S.risk.maxTradesDay=P.maxTradesDay; S.risk.minEmaDistATR=P.minEmaDistATR;
@@ -323,7 +334,7 @@ function chip(t,c){return `<span class="chip ${c||''}">${t}</span>`;}
 function hourOf(s){if(!s)return null;s=(""+s).toLowerCase().trim();const m=s.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);if(!m)return null;let h=parseInt(m[1],10);const ap=m[3];if(ap==="pm"&&h<12)h+=12;if(ap==="am"&&h===12)h=0;return (h<0||h>23)?null:h;}
 function minutesOf(s){const h=hourOf(s);if(h===null)return null;const m=(""+s).match(/\d{1,2}:(\d{2})/);return h*60+(m?parseInt(m[1],10):0);}
 function rootSym(s){if(!s)return "MES";const up=String(s).toUpperCase();for(const k of ["MES","MNQ","MGC"])if(up.indexOf(k)===0)return k;return up;}
-function inFilter(t){const f=S.journalFilter||"All";return f==="All"||t.sym===f;}
+function inFilter(t){return t.sym===S.market;}   // top market tab drives every section
 
 /* ---------- core setup math (mirrors the Pine) ---------- */
 function calcSetup(o){
@@ -373,6 +384,10 @@ function analyzeTrade(t){
   if(o.useSlope) gates.push(["EMA slope agrees",!!f.slope,"slope direction"]);
   if(o.useStructure) gates.push(["Structure "+(long?"HL":"LH"),!!f.structure,"pivot structure"]);
   if(o.matchDoji) gates.push(["Doji colour matches",!!f.dojiColor,"—"]);
+  if(o.useADX) gates.push(["ADX ≥ "+r.minADX+" & DI agrees",!!f.adx,"trend strength"]);
+  if(o.useVWAP) gates.push([long?"Above VWAP":"Below VWAP",!!f.vwap,"session VWAP bias"]);
+  if(o.useOR) gates.push([long?"Broke OR high":"Broke OR low",!!f.or,r.orMinutes+"-min opening range"]);
+  if(o.useSpike||o.useBlackout) gates.push(["News window clear",!!f.news,o.useSpike?"no "+r.spikeMult+"×ATR spike":"outside blackout"]);
   gates.push(["Stop within ATR bounds",!!(C.ok&&C.inBounds),C.ok?pts(C.stopDist)+" pts ("+pts(C.minD)+"–"+pts(C.maxD)+")":"—"]);
   if(C.ok) gates.push(["Size ≥ 1 contract",C.qty>=1,C.qty+" ct @ "+money(C.riskPerCt)+"/ct"]);
   const take=gates.every(g=>g[1]);
@@ -423,6 +438,20 @@ function renderReads(){
   else set("rSlope","—","neutral");
   if(vr!==null){const need=num(S.risk.volMult)||0.9;set("rVol",pts(vr)+"× highest — "+(vr>=need?"passes":"below "+need+"×"),vr>=need?"long":"warn");}
   else set("rVol","—","neutral");
+  const adx=num(S.mkt.adx),pdi=num(S.mkt.plusDI),mdi=num(S.mkt.minusDI),vw=num(S.mkt.vwap),oh=num(S.mkt.orHigh),ol=num(S.mkt.orLow);
+  if(!S.opts.useADX) set("rAdx","filter off","neutral");
+  else if(adx!==null&&pdi!==null&&mdi!==null){
+    const strong=adx>=(num(S.risk.minADX)||20);
+    set("rAdx","ADX "+pts(adx)+(strong?" ✓":" (below "+S.risk.minADX+")")+" · "+(pdi>mdi?"+DI leads · longs":"−DI leads · shorts"),strong?(pdi>mdi?"long":"short"):"warn");
+  } else set("rAdx","—","neutral");
+  if(!S.opts.useVWAP) set("rVwap","filter off","neutral");
+  else if(cur!==null&&vw!==null) set("rVwap",cur>vw?"Above VWAP · longs ok":"Below VWAP · shorts ok",cur>vw?"long":"short");
+  else set("rVwap","—","neutral");
+  if(!S.opts.useOR) set("rOr","filter off","neutral");
+  else if(cur!==null&&oh!==null&&ol!==null) set("rOr",cur>oh?"Above OR high · long confirm":cur<ol?"Below OR low · short confirm":"Inside OR "+pts(ol)+"–"+pts(oh),cur>oh?"long":cur<ol?"short":"warn");
+  else set("rOr","—","neutral");
+  if(!S.opts.useSpike&&!S.opts.useBlackout) set("rNews","filters off","neutral");
+  else set("rNews","Check chart: spike pause "+(S.opts.useSpike?S.risk.spikeMult+"×ATR / "+S.risk.spikePause+" bars":"off")+(S.opts.useBlackout?" · blackout on":""),"warn");
   const atrv=num(S.mkt.atr);
   document.getElementById("derived").innerHTML=[
     ["Min stop",atrv?pts(atrv*S.risk.minStopATR)+" pts":"—"],
@@ -435,6 +464,8 @@ function renderReads(){
     ["Daily cap",(num(S.risk.maxTradesDay)||0)||"∞"],
     ["Max size",(num(S.risk.maxContracts)||20)+" ct"],
     ["Session",S.opts.useSession&&PRESETS[S.market]?PRESETS[S.market].session:"24h"],
+    ["ATR length",(num(S.risk.atrLen)||14)],
+    ["Spike level",atrv?pts(atrv*(num(S.risk.spikeMult)||2.5))+" pts":"—"],
   ].map(r=>`<div class="row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join("");
 }
 function renderSetups(){
@@ -511,12 +542,11 @@ function analysisHTML(t){
 }
 function renderJournal(){
   const host=document.getElementById("jRows"); if(!host)return;
-  const flt=S.journalFilter||"All";
-  const fb=document.getElementById("jFilter");
-  if(fb)[...fb.children].forEach(x=>x.classList.toggle("on",x.dataset.mf===flt));
-  const FL=[["doji","Doji"],["pullback","Pullback"],["volume","Volume"],["htf","HTF"],["slope","Slope"],["structure","Structure"],["dojiColor","Doji colour"]];
+  const flt=S.market;
+  const jm=document.getElementById("jMkt"); if(jm)jm.textContent="· "+S.market;
+  const FL=[["doji","Doji"],["pullback","Pullback"],["volume","Volume"],["htf","HTF"],["slope","Slope"],["structure","Structure"],["dojiColor","Doji colour"],["adx","ADX"],["vwap","VWAP"],["or","OR break"],["news","News clear"]];
   host.innerHTML=S.journal.map((t,i)=>{
-    if(flt!=="All"&&t.sym!==flt)return "";
+    if(t.sym!==flt)return "";
     const A=analyzeTrade(t), L=t.dir==="Long";
     const chips=FL.map(fd=>`<button class="tg ${t.flags&&t.flags[fd[0]]?'on':''}" data-jflag="${i}" data-flag="${fd[0]}">${fd[1]}</button>`).join("");
     return `<details class="jcard" data-jt="${i}" ${t._open?'open':''}>
@@ -556,13 +586,14 @@ function updateTotals(){
   S.journal.forEach(t=>{if(!inFilter(t))return;const a=analyzeTrade(t);if(a.pnl!==null){total+=a.pnl;count++;}});
   const tv=document.getElementById("jTotal"); if(!tv)return;
   tv.textContent=money(total);tv.style.color=total>0?"var(--long)":total<0?"var(--short)":"var(--text)";
+  const jt=document.getElementById("jTotMkt"); if(jt)jt.textContent=S.market;
   const cap=num(S.risk.maxTradesDay)||0;
   document.getElementById("jStatus").innerHTML=chip(`trades <b>${count}</b>`+(cap?`/${cap}`:""),cap&&count>=cap?"warn":"cyan");
 }
 function refreshCard(i){const el=document.getElementById("jres"+i);if(el)el.innerHTML=analysisHTML(S.journal[i]);updateTotals();renderPerf();renderTimeline();renderBacktest();}
 function renderPerf(){
   const host=document.getElementById("perfScore"); if(!host)return;
-  const pm=document.getElementById("perfMkt"); if(pm)pm.textContent="· "+(S.journalFilter||"All");
+  const pm=document.getElementById("perfMkt"); if(pm)pm.textContent="· "+S.market;
   const items=S.journal.filter(inFilter).map(t=>({t,A:analyzeTrade(t)})).filter(o=>o.A.pnl!==null);
   if(!items.length){host.innerHTML=`<div class="hint" style="margin:0">No completed trades.</div>`;document.getElementById("perfExits").innerHTML="";document.getElementById("perfRecs").innerHTML="";return;}
   let wins=0,gw=0,gl=0,sumR=0,rn=0,wd=[],ld=[];
@@ -611,7 +642,7 @@ function renderTimeline(){
 }
 function renderBacktest(){
   const host=document.getElementById("backtest"); if(!host)return;
-  const bm=document.getElementById("btMkt"); if(bm)bm.textContent="· "+(S.journalFilter||"All");
+  const bm=document.getElementById("btMkt"); if(bm)bm.textContent="· "+S.market;
   const eq=document.getElementById("eqcurve");
   const items=S.journal.filter(inFilter).map(t=>({t,A:analyzeTrade(t),mins:minutesOf(t.etime)})).filter(o=>o.A.pnl!==null);
   if(!items.length){host.innerHTML=`<div class="hint" style="margin:0">No completed trades.</div>`;if(eq)eq.innerHTML="";return;}
@@ -650,7 +681,7 @@ function applyPayload(j){
     lv=(L[S.market]||L.MES||L.MNQ||L.MGC||L._last)?(L[S.market]||L._last||L.MES||L.MNQ||L.MGC||{}):L;}
   else lv=j;
   let filled=0,missing=[];
-  ["cur","ema","atr","htfEma","emaPrev","volRatio"].forEach(k=>{const v=parseFloat(lv[k]);
+  ["cur","ema","atr","htfEma","emaPrev","volRatio","adx","plusDI","minusDI","vwap","orHigh","orLow"].forEach(k=>{const v=parseFloat(lv[k]);
     if(lv[k]!==null&&lv[k]!==undefined&&!isNaN(v)){S.mkt[k]=v;filled++;}else missing.push(k);});
   let added=0,updated=0;
   const trades=Array.isArray(j.trades)?j.trades:(j.trade?[j.trade]:[]);
@@ -695,7 +726,7 @@ function setLive(on){
 document.getElementById("mktSeg").addEventListener("click",e=>{
   const b=e.target.closest("button[data-m]");if(!b)return;
   S.market=b.dataset.m;[...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b));
-  applyPreset(); renderRiskInputs();
+  applyPreset(); renderRiskInputs(); renderJournal(); renderPerf(); renderTimeline(); renderBacktest();
   if(lastPayload){try{applyPayload(lastPayload);}catch(err){}renderMktInputs();}
   renderAll();
 });
@@ -725,14 +756,13 @@ document.body.addEventListener("click",e=>{
   if(jf){const i=+jf.dataset.jflag;S.journal[i].flags=S.journal[i].flags||{};S.journal[i].flags[jf.dataset.flag]=!S.journal[i].flags[jf.dataset.flag];jf.classList.toggle("on");refreshCard(i);save();return;}
   const del=e.target.closest("[data-jdel]");
   if(del){S.journal.splice(+del.dataset.jdel,1);renderAll();return;}
-  const mf=e.target.closest("#jFilter button[data-mf]");
-  if(mf){S.journalFilter=mf.dataset.mf;renderJournal();renderPerf();renderTimeline();renderBacktest();save();return;}
   if(e.target.id==="addJ"){S.journal.push({sym:S.market,dir:"Long",entry:null,wick:null,ema:num(S.mkt.ema),atr:num(S.mkt.atr),ct:1,exit:null,exitReason:"TP",date:"",etime:"",dur:null,flags:{},note:"",_open:true});renderAll();return;}
   if(e.target.id==="pullBtn"){pullLevels();return;}
   if(e.target.id==="liveBtn"){setLive(!S.live);return;}
   if(e.target.id==="exportTrades"){
-    const data=JSON.stringify({levels:{},trades:S.journal});const n=document.getElementById("btNote");
-    try{navigator.clipboard.writeText(data);n.className="pullnote";n.textContent="Copied "+S.journal.length+" trades to clipboard.";}
+    const mine=S.journal.filter(inFilter);
+    const data=JSON.stringify({levels:{},trades:mine});const n=document.getElementById("btNote");
+    try{navigator.clipboard.writeText(data);n.className="pullnote";n.textContent="Copied "+mine.length+" "+S.market+" trades to clipboard.";}
     catch(err){n.className="pullnote";n.innerHTML="<textarea style='width:100%;height:70px;font-size:10px' onclick='this.select()'>"+data.replace(/</g,"&lt;")+"</textarea>";}
     return;
   }
@@ -752,4 +782,3 @@ document.body.addEventListener("toggle",e=>{const d=e.target;if(d&&d.dataset&&d.
 </script>
 </body>
 </html>
-
