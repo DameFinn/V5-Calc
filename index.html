@@ -1,4 +1,4 @@
-<!DOCTYPE! html>
+<!DOCTYPE26 html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -155,7 +155,7 @@
 <body>
 <div class="top">
   <div class="wrap">
-    <div class="brand"><h1>Doji Pullback Terminal</h1><span class="ver">100EMA · adaptive d5</span></div>
+    <div class="brand"><h1>Doji Pullback Terminal</h1><span class="ver">100EMA · adaptive d6</span></div>
     <div class="seg" id="mktSeg">
       <button data-m="MES" class="on">MES</button>
       <button data-m="MNQ">MNQ</button>
@@ -188,6 +188,7 @@
       <div class="read"><span class="k">VWAP</span><span class="v neutral" id="rVwap">—</span></div>
       <div class="read"><span class="k">Op. range</span><span class="v neutral" id="rOr">—</span></div>
       <div class="read"><span class="k">News</span><span class="v neutral" id="rNews">—</span></div>
+      <div class="read"><span class="k">Daily loss</span><span class="v neutral" id="rLoss">—</span></div>
     </div>
     <div style="height:12px"></div>
     <div class="mini" id="derived"></div>
@@ -250,7 +251,7 @@
   <div class="foot">
     Mirrors 100 EMA Doji Pullback (adaptive): per-market presets, stop = wick ± ATR buffer,
     size = floor(equity × risk% ÷ stop$) capped at max contracts, single TP at R:R,
-    optional ADX / VWAP / opening-range / news filters and BE / trail / time / session-end exits. Not financial advice.
+    optional ADX / VWAP / opening-range / news filters daily loss limit, and BE / trail / time / session-end exits. Not financial advice.
   </div>
 </div>
 
@@ -291,19 +292,21 @@ const RISK_FIELDS=[
   ["atrLen","ATR length",14],["adxLen","ADX length",14],["minADX","Min ADX",20],
   ["orMinutes","Opening range (min)",30],["spikeMult","Spike threshold ×ATR",2.5],
   ["spikePause","Pause bars after spike",3],
+  ["dailyLossPct","Daily loss limit %",2.0],["dailyLossDollar","Daily loss limit $",500],
 ];
 const OPTS=[["usePreset","Market preset"],["forceRR","Force my R:R"],["fixedSize","Fixed contracts"],["allowMinOne","Allow 1 ct min"],
   ["useHTF","HTF filter"],["useSlope","EMA slope"],["useStructure","Structure"],["matchDoji","Doji color"],
   ["useADX","ADX"],["useVWAP","VWAP bias"],["useOR","Opening range"],
   ["useSpike","Spike pause"],["useBlackout","Date blackout"],
+  ["useDailyLoss","Daily loss limit"],["lossFixed","Limit in $ (not %)"],["closeOnLimit","Close on limit"],
   ["beOn","Break-even"],["trailOn","Trail"],["timeOn","Time exit"],["useSession","Session limit"]];
-const EXITS=["TP","SL","Breakeven","Trail","Time","Session End","Manual"];
+const EXITS=["TP","SL","Breakeven","Trail","Time","Session End","Daily Loss","Manual"];
 
 let S={
   market:"MES",
   mkt:Object.fromEntries(MKT_FIELDS.map(f=>[f[0],f[2]])),
   risk:Object.fromEntries(RISK_FIELDS.map(f=>[f[0],f[2]])),
-  opts:{usePreset:true,forceRR:false,fixedSize:false,allowMinOne:true,useHTF:false,useSlope:true,useStructure:false,matchDoji:false,useADX:false,useVWAP:false,useOR:false,useSpike:false,useBlackout:false,beOn:false,trailOn:false,timeOn:false,useSession:true},
+  opts:{usePreset:true,forceRR:false,fixedSize:false,allowMinOne:true,useHTF:false,useSlope:true,useStructure:false,matchDoji:false,useADX:false,useVWAP:false,useOR:false,useSpike:false,useBlackout:false,useDailyLoss:false,lossFixed:false,closeOnLimit:true,beOn:false,trailOn:false,timeOn:false,useSession:true},
   setups:[{dir:"Long",entry:6800,wick:6788},{dir:"Long",entry:null,wick:null},{dir:"Long",entry:null,wick:null},{dir:"Long",entry:null,wick:null}],
   journal:[{sym:"MES",dir:"Long",entry:6800,wick:6788,atr:12,date:"07/30",etime:"10:15",dur:14,ct:1,exit:6812,exitReason:"TP",
     flags:{doji:true,pullback:true,volume:true,htf:true,slope:true,structure:false},note:"clean pullback to EMA",_open:true}],
@@ -314,7 +317,7 @@ async function save(){try{if(window.storage)await window.storage.set("doji_state
 async function load(){try{if(window.storage){const r=await window.storage.get("doji_state",false);if(r&&r.value){const p=JSON.parse(r.value);S=Object.assign(S,p);
   S.mkt=Object.assign(Object.fromEntries(MKT_FIELDS.map(f=>[f[0],f[2]])),p.mkt||{});
   S.risk=Object.assign(Object.fromEntries(RISK_FIELDS.map(f=>[f[0],f[2]])),p.risk||{});
-  S.opts=Object.assign({usePreset:true,forceRR:false,fixedSize:false,allowMinOne:true,useHTF:false,useSlope:true,useStructure:false,matchDoji:false,useADX:false,useVWAP:false,useOR:false,useSpike:false,useBlackout:false,beOn:false,trailOn:false,timeOn:false,useSession:true},p.opts||{});}}}catch(e){}}
+  S.opts=Object.assign({usePreset:true,forceRR:false,fixedSize:false,allowMinOne:true,useHTF:false,useSlope:true,useStructure:false,matchDoji:false,useADX:false,useVWAP:false,useOR:false,useSpike:false,useBlackout:false,useDailyLoss:false,lossFixed:false,closeOnLimit:true,beOn:false,trailOn:false,timeOn:false,useSession:true},p.opts||{});}}}catch(e){}}
 
 function applyPreset(){
   if(!S.opts.usePreset)return;
@@ -334,7 +337,19 @@ function chip(t,c){return `<span class="chip ${c||''}">${t}</span>`;}
 function hourOf(s){if(!s)return null;s=(""+s).toLowerCase().trim();const m=s.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);if(!m)return null;let h=parseInt(m[1],10);const ap=m[3];if(ap==="pm"&&h<12)h+=12;if(ap==="am"&&h===12)h=0;return (h<0||h>23)?null:h;}
 function minutesOf(s){const h=hourOf(s);if(h===null)return null;const m=(""+s).match(/\d{1,2}:(\d{2})/);return h*60+(m?parseInt(m[1],10):0);}
 function rootSym(s){if(!s)return "MES";const up=String(s).toUpperCase();for(const k of ["MES","MNQ","MGC"])if(up.indexOf(k)===0)return k;return up;}
-function inFilter(t){return t.sym===S.market;}   // top market tab drives every section
+function inFilter(t){return t.sym===S.market;}
+function dailyLoss(){
+  // today's realized P&L for this market = trades sharing the most recent date
+  const rows=S.journal.filter(inFilter).map(t=>({t,A:analyzeTrade(t)})).filter(o=>o.A.pnl!==null&&o.t.date);
+  if(!rows.length)return {net:0,limit:null,hit:false,day:null,n:0};
+  const day=rows.map(o=>o.t.date).sort().pop();
+  const today=rows.filter(o=>o.t.date===day);
+  const net=today.reduce((a,o)=>a+o.A.pnl,0);
+  const eq=num(S.risk.equity)||0;
+  const limit=S.opts.useDailyLoss ? (S.opts.lossFixed ? (num(S.risk.dailyLossDollar)||0) : eq*(num(S.risk.dailyLossPct)||0)/100) : null;
+  const hit=limit!==null && net<=-limit;
+  return {net,limit,hit,day,n:today.length};
+}   // top market tab drives every section
 
 /* ---------- core setup math (mirrors the Pine) ---------- */
 function calcSetup(o){
@@ -387,6 +402,7 @@ function analyzeTrade(t){
   if(o.useADX) gates.push(["ADX ≥ "+r.minADX+" & DI agrees",!!f.adx,"trend strength"]);
   if(o.useVWAP) gates.push([long?"Above VWAP":"Below VWAP",!!f.vwap,"session VWAP bias"]);
   if(o.useOR) gates.push([long?"Broke OR high":"Broke OR low",!!f.or,r.orMinutes+"-min opening range"]);
+  if(o.useDailyLoss){const D=dailyLoss();gates.push(["Daily loss limit not hit",!D.hit,D.limit!==null?money(D.net)+" / -"+money(D.limit):"—"]);}
   if(o.useSpike||o.useBlackout) gates.push(["News window clear",!!f.news,o.useSpike?"no "+r.spikeMult+"×ATR spike":"outside blackout"]);
   gates.push(["Stop within ATR bounds",!!(C.ok&&C.inBounds),C.ok?pts(C.stopDist)+" pts ("+pts(C.minD)+"–"+pts(C.maxD)+")":"—"]);
   if(C.ok) gates.push(["Size ≥ 1 contract",C.qty>=1,C.qty+" ct @ "+money(C.riskPerCt)+"/ct"]);
@@ -452,6 +468,10 @@ function renderReads(){
   else set("rOr","—","neutral");
   if(!S.opts.useSpike&&!S.opts.useBlackout) set("rNews","filters off","neutral");
   else set("rNews","Check chart: spike pause "+(S.opts.useSpike?S.risk.spikeMult+"×ATR / "+S.risk.spikePause+" bars":"off")+(S.opts.useBlackout?" · blackout on":""),"warn");
+  if(!S.opts.useDailyLoss) set("rLoss","limit off","neutral");
+  else{const D=dailyLoss();
+    set("rLoss", D.limit===null?"—":(D.hit?"LIMIT HIT · halt trading":"Today "+money(D.net)+" of -"+money(D.limit)+(D.day?" ("+D.day+")":"")),
+        D.hit?"short":(D.net<0?"warn":"long"));}
   const atrv=num(S.mkt.atr);
   document.getElementById("derived").innerHTML=[
     ["Min stop",atrv?pts(atrv*S.risk.minStopATR)+" pts":"—"],
@@ -466,6 +486,7 @@ function renderReads(){
     ["Session",S.opts.useSession&&PRESETS[S.market]?PRESETS[S.market].session:"24h"],
     ["ATR length",(num(S.risk.atrLen)||14)],
     ["Spike level",atrv?pts(atrv*(num(S.risk.spikeMult)||2.5))+" pts":"—"],
+    ["Loss limit",S.opts.useDailyLoss?money(S.opts.lossFixed?(num(S.risk.dailyLossDollar)||0):(num(S.risk.equity)||0)*(num(S.risk.dailyLossPct)||0)/100):"off"],
   ].map(r=>`<div class="row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join("");
 }
 function renderSetups(){
@@ -588,7 +609,11 @@ function updateTotals(){
   tv.textContent=money(total);tv.style.color=total>0?"var(--long)":total<0?"var(--short)":"var(--text)";
   const jt=document.getElementById("jTotMkt"); if(jt)jt.textContent=S.market;
   const cap=num(S.risk.maxTradesDay)||0;
-  document.getElementById("jStatus").innerHTML=chip(`trades <b>${count}</b>`+(cap?`/${cap}`:""),cap&&count>=cap?"warn":"cyan");
+  const D=dailyLoss();
+  let lossChip="";
+  if(S.opts.useDailyLoss&&D.limit!==null)
+    lossChip=chip(D.hit?`daily limit HIT`:`today <b>${money(D.net)}</b> / -${money(D.limit)}`,D.hit?"short":(D.net<0?"warn":"long"));
+  document.getElementById("jStatus").innerHTML=chip(`trades <b>${count}</b>`+(cap?`/${cap}`:""),cap&&count>=cap?"warn":"cyan")+lossChip;
 }
 function refreshCard(i){const el=document.getElementById("jres"+i);if(el)el.innerHTML=analysisHTML(S.journal[i]);updateTotals();renderPerf();renderTimeline();renderBacktest();}
 function renderPerf(){
@@ -620,6 +645,8 @@ function renderPerf(){
   if(lm!=null&&wm!=null&&lm>wm*2) recs.push(["med","Losers held "+(lm/wm).toFixed(1)+"× longer","Consider enabling the time exit (max bars) so dead trades close faster."]);
   if(g["SL"]&&g["SL"].n/n>0.5) recs.push(["info","Most exits are stop-outs","Over half of trades hit SL. Test a wider min-stop (ATR) or require volume/structure confirmation."]);
   if(g["Breakeven"]&&g["Breakeven"].n/n>0.3) recs.push(["info","Breakeven is eating winners","BE triggers at "+S.risk.beR+"R and is closing "+g["Breakeven"].n+" trades flat. Test a later trigger (0.8–1R) or turn BE off."]);
+  const DL=dailyLoss();
+  if(S.opts.useDailyLoss&&DL.hit) recs.push(["high","Daily loss limit hit","Today is "+money(DL.net)+" against a -"+money(DL.limit)+" limit. The strategy halts new entries"+(S.opts.closeOnLimit?" and closes any open position":"")+". Stop for the day."]);
   if(n<30) recs.push(["info","Small sample",n+" trades — too few to conclude. Log 30–50+ and change one lever at a time."]);
   if(!recs.length) recs.push(["good","Nothing flagged","Stats look balanced for this sample."]);
   const ord={high:0,med:1,info:2,good:3};recs.sort((a,b)=>ord[a[0]]-ord[b[0]]);
