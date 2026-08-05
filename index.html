@@ -1,4 +1,4 @@
-<!DOCTYPE finn html>
+<!DOCTYPE$ html>
 <html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -160,7 +160,7 @@
 </style>
 </head><body>
 <div class="top"><div class="wrap">
-  <div class="brand"><h1>Doji Pullback v3</h1><span class="ver">v3 · g2</span></div>
+  <div class="brand"><h1>Doji Pullback v3</h1><span class="ver">v3 · g4</span></div>
   <div class="seg" id="mktSeg">
     <button data-m="MNQ" class="on">MNQ</button><button data-m="MGC">MGC</button>
   </div>
@@ -312,6 +312,7 @@ function chip(t,c){return '<span class="chip '+(c||'')+'">'+t+'</span>';}
 function hourOf(s){if(!s)return null;s=(""+s).toLowerCase().trim();const m=s.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);if(!m)return null;let h=parseInt(m[1],10);const ap=m[3];if(ap==="pm"&&h<12)h+=12;if(ap==="am"&&h===12)h=0;return (h<0||h>23)?null:h;}
 function minutesOf(s){const h=hourOf(s);if(h===null)return null;const m=(""+s).match(/\d{1,2}:(\d{2})/);return h*60+(m?parseInt(m[1],10):0);}
 function inFilter(t){return t.sym===S.market;}
+function specOf(sym){return SPECS[sym]||SPECS[S.market]||{pv:1,tick:0.01,dp:2};}
 function applyPreset(){if(!S.opts.preset)return;const P=PRESETS[S.market];if(!P)return;
  ["rr","dojiBody","dojiRej","pullBody","wickTol","depth","minStop","maxStop","slBuf","cooldown"].forEach(k=>S.risk[k]=P[k]);
  S.risk.pbBars=P.pbBars;S.risk.pbWin=P.pbWin;S.risk.emaMin=P.emaMin;S.risk.emaMax=P.emaMax;S.risk.maxTrades=P.maxTrades;}
@@ -320,13 +321,13 @@ function costPoints(){const sp=SPECS[S.market];
  return ((num(S.risk.comm)||0)*2)/Math.max(sp.pv,0.01) + 2*(num(S.risk.slipTicks)||0)*sp.tick;}
 
 function calcSetup(o){
- const sp=SPECS[o.sym||S.market], r=S.risk;
+ const sp=specOf(o.sym||S.market), r=S.risk;
  const e=num(o.entry), sw=num(o.swing), atr=num(o.atr!==undefined?o.atr:S.mkt.atrS);
  if(e===null||sw===null||atr===null||atr<=0)return {ok:false};
  const long=o.dir==="Long", sign=long?1:-1;
  const stop = long ? sw - atr*(num(r.slBuf)||0) : sw + atr*(num(r.slBuf)||0);
  const dist = Math.abs(e-stop); if(dist<=0)return {ok:false};
- const sp2=SPECS[o.sym||S.market];
+ const sp2=specOf(o.sym||S.market);
  const affordPts=(num(r.riskDollar)||0)/Math.max(sp2.pv,0.01);
  const capATR=(S.opts.autoCapStop&&!S.opts.fixedSize)?Math.min(num(r.maxStop)||0, affordPts/Math.max(atr,0.0001)):(num(r.maxStop)||0);
  const effMax=Math.max(capATR, num(r.minStop)||0);
@@ -362,7 +363,7 @@ function edgeMath(){
 }
 
 function analyzeTrade(t){
- const sp=SPECS[t.sym]||SPECS.MES, long=t.dir==="Long", sign=long?1:-1;
+ const sp=specOf(t.sym), long=t.dir==="Long", sign=long?1:-1;
  const C=calcSetup(t), f=t.flags||{}, r=S.risk, o=S.opts;
  const e=num(t.entry), atr=num(t.atr), ema=num(t.ema);
  const gates=[];
@@ -716,10 +717,23 @@ function editing(){const a=document.activeElement;return !!(a&&/^(INPUT|TEXTAREA
 async function livePoll(){
  if(!(S.relay&&/^https?:\/\//i.test(S.relay)))return; if(editing())return;
  const ln=document.getElementById("liveNote");
- try{const r=await fetch(S.relay,{cache:"no-store"});const j=await r.json();lastPayload=j;
-  applyPayload(j);renderMktInputs();renderAll();
-  if(ln){ln.className="pullnote";ln.textContent="\u25cf live \u00b7 synced "+new Date().toLocaleTimeString();}}
- catch(e){if(ln){ln.className="pullnote err";ln.textContent="\u25cf live \u00b7 relay unreachable";}}
+ try{
+  const r=await fetch(S.relay,{cache:"no-store"});
+  if(!r.ok)throw new Error("http "+r.status);
+  const j=await r.json();
+  const hasData=j&&j.levels&&Object.keys(j.levels).length>0;
+  lastPayload=j;
+  try{ applyPayload(j); renderMktInputs(); renderAll(); }
+  catch(renderErr){ console.error("livePoll render error",renderErr); }
+  if(ln){
+   if(hasData){ln.className="pullnote";ln.textContent="\u25cf live \u00b7 synced "+new Date().toLocaleTimeString();}
+   else{ln.className="pullnote err";ln.textContent="\u25cf live \u00b7 relay reachable but no levels yet";}
+  }
+ } catch(e){
+  if(ln){ln.className="pullnote err";ln.textContent="\u25cf live \u00b7 relay unreachable ("+new Date().toLocaleTimeString()+")";}
+ }
+ // NOTE: S.live and the Live button are never touched here - a bad payload or render
+ // error only shows in this status line, it can never turn Live off by itself.
 }
 function setLive(on){
  const b=document.getElementById("liveBtn");
@@ -728,14 +742,17 @@ function setLive(on){
  if(on){livePoll();liveTimer=setInterval(livePoll,20000);}
  save();
 }
-function renderAll(){renderTop();renderSettings();applySectionVis();renderReads();renderEdge();renderSetups();renderJournal();renderPerf();renderTimeline();renderBacktest();save();}
+function renderAll(){try{renderTop();renderSettings();applySectionVis();renderReads();renderEdge();renderSetups();renderJournal();renderPerf();renderTimeline();renderBacktest();save();}catch(err){console.error("renderAll error",err);}}
 
 document.getElementById("mktSeg").addEventListener("click",e=>{
  const b=e.target.closest("button[data-m]");if(!b)return;
  S.market=b.dataset.m;[...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b));
- applyPreset();renderRiskInputs();
- if(lastPayload){try{applyPayload(lastPayload);}catch(err){}renderMktInputs();}
- renderAll();});
+ try{
+  applyPreset();renderRiskInputs();
+  if(lastPayload){try{applyPayload(lastPayload);}catch(err){}renderMktInputs();}
+  renderAll();
+ }catch(err){console.error("market switch render error",err);}
+});
 document.body.addEventListener("input",e=>{const t=e.target;
  if(t.id==="relayUrl"){S.relay=t.value.trim();save();return;}
  if(t.dataset.mkt){S.mkt[t.dataset.mkt]=t.value;renderTop();renderReads();renderEdge();renderSetups();save();}
@@ -794,6 +811,9 @@ document.body.addEventListener("click",e=>{
   return;}});
 document.body.addEventListener("toggle",e=>{const d=e.target;if(d&&d.dataset&&d.dataset.jt!==undefined){S.journal[+d.dataset.jt]._open=d.open;save();}},true);
 
+document.addEventListener("visibilitychange",()=>{
+ if(document.visibilityState==="visible"&&S.live){ livePoll(); }
+});
 (async function(){await load();
  if(!S.relay||!/^https?:\/\//i.test(S.relay))S.relay="https://v5relay.658d5vgbms.workers.dev";
  S.live=true;
@@ -801,4 +821,3 @@ document.body.addEventListener("toggle",e=>{const d=e.target;if(d&&d.dataset&&d.
  const ru=document.getElementById("relayUrl");if(ru)ru.value=S.relay;
  applyPreset();renderMktInputs();renderRiskInputs();renderAll();setLive(true);})();
 </script></body></html>
-  
