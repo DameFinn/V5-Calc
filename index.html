@@ -1,4 +1,4 @@
-<!DOCTYPEfinn html>
+<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -160,7 +160,7 @@
 </style>
 </head><body>
 <div class="top"><div class="wrap">
-  <div class="brand"><h1>Doji Pullback v3</h1><span class="ver">v3 · f3</span></div>
+  <div class="brand"><h1>Doji Pullback v3</h1><span class="ver">v3 · g2</span></div>
   <div class="seg" id="mktSeg">
     <button data-m="MNQ" class="on">MNQ</button><button data-m="MGC">MGC</button>
   </div>
@@ -253,26 +253,33 @@
   single TP at R:R, cost-aware net P&amp;L and break-even win rate. Not financial advice.</div>
 </div>
 <script>
-let SPECS={MNQ:{pv:2,tick:0.25,dp:2},MGC:{pv:10,tick:0.10,dp:2}};
+let SPECS={MNQ:{pv:2,tick:0.25,dp:2},MES:{pv:5,tick:0.25,dp:2},MGC:{pv:10,tick:0.10,dp:2},
+ M2K:{pv:5,tick:0.10,dp:2},MBT:{pv:0.10,tick:5,dp:0},MCL:{pv:100,tick:0.01,dp:2}};
 let PRESETS={
- MNQ:{rr:1.50,dojiBody:50,dojiRej:1.00,pullBody:40,wickTol:45,pbBars:2,pbWin:3,depth:0.40,
-      emaMin:0.10,emaMax:2.50,atrS:14,atrL:50,minStop:0.40,maxStop:1.80,slBuf:0.20,
-      cooldown:2,maxTrades:5,htf:"30",recTF:5,sess:"0930-1600"},
- MGC:{rr:1.25,dojiBody:52,dojiRej:1.00,pullBody:40,wickTol:48,pbBars:2,pbWin:3,depth:0.40,
-      emaMin:0.10,emaMax:2.75,atrS:14,atrL:50,minStop:0.40,maxStop:1.80,slBuf:0.25,
-      cooldown:2,maxTrades:4,htf:"60",recTF:15,sess:"0820-1600"},
+ MNQ:{rr:2.50,dojiBody:50,dojiRej:1.00,pullBody:40,wickTol:45,pbBars:2,pbWin:3,depth:0.40,
+   emaMin:0.10,emaMax:2.50,atrS:14,atrL:50,minStop:0.40,maxStop:1.80,slBuf:0.20,cooldown:2,maxTrades:5,htf:"30",recTF:5,sess:"0930-1600"},
+ MES:{rr:2.50,dojiBody:50,dojiRej:1.00,pullBody:40,wickTol:45,pbBars:2,pbWin:3,depth:0.40,
+   emaMin:0.10,emaMax:2.25,atrS:14,atrL:50,minStop:0.40,maxStop:1.80,slBuf:0.15,cooldown:2,maxTrades:4,htf:"60",recTF:15,sess:"0930-1600"},
+ MGC:{rr:2.50,dojiBody:52,dojiRej:1.00,pullBody:40,wickTol:48,pbBars:2,pbWin:3,depth:0.40,
+   emaMin:0.10,emaMax:2.75,atrS:14,atrL:50,minStop:0.40,maxStop:1.80,slBuf:0.25,cooldown:2,maxTrades:4,htf:"60",recTF:15,sess:"0820-1600"},
+ M2K:{rr:2.50,dojiBody:50,dojiRej:1.00,pullBody:40,wickTol:45,pbBars:2,pbWin:3,depth:0.40,
+   emaMin:0.10,emaMax:2.50,atrS:14,atrL:50,minStop:0.40,maxStop:1.80,slBuf:0.20,cooldown:2,maxTrades:4,htf:"60",recTF:15,sess:"0930-1600"},
+ MBT:{rr:2.50,dojiBody:50,dojiRej:1.00,pullBody:40,wickTol:45,pbBars:2,pbWin:3,depth:0.40,
+   emaMin:0.10,emaMax:3.00,atrS:14,atrL:50,minStop:0.40,maxStop:1.80,slBuf:0.30,cooldown:2,maxTrades:8,htf:"240",recTF:15,sess:"0000-2400"},
+ MCL:{rr:2.50,dojiBody:50,dojiRej:1.00,pullBody:40,wickTol:45,pbBars:2,pbWin:3,depth:0.40,
+   emaMin:0.10,emaMax:2.50,atrS:14,atrL:50,minStop:0.40,maxStop:1.80,slBuf:0.25,cooldown:2,maxTrades:8,htf:"60",recTF:15,sess:"0000-2400"},
 };
 const MKT=[["cur","Current price",28010],["ema","EMA(100)",27940],["atrS","ATR short (stops)",60],
  ["atrL","ATR long (regime)",62],["atrAvg","Avg ATR (regime base)",60],["htfOk","HTF bull? 1/0",1]];
 const RISK=[["riskDollar","Risk per trade $",100],["fixedQty","Fixed contracts",1],["maxContracts","Max contracts",5],
  ["comm","Commission /side $",0.75],["slipTicks","Slippage ticks/side",1],
- ["rr","Risk:Reward",1.5],["minStop","Min stop ATR",0.40],["maxStop","Max stop ATR",1.80],["slBuf","SL buffer ATR",0.20],
+ ["rr","Risk:Reward",2.5],["minStop","Min stop ATR",0.40],["maxStop","Max stop ATR",1.80],["slBuf","SL buffer ATR",0.20],
  ["emaMin","Min EMA dist ATR",0.25],["emaMax","Max EMA dist ATR",1.75],["depth","Min pullback depth ATR",0.60],
  ["pbBars","Pullback candles",2],["pbWin","Pullback window",3],["dojiBody","Doji body %",40],["dojiRej","Doji rejection ×",1.20],
  ["pullBody","Min pullback body %",50],["wickTol","Wick tolerance %",30],
  ["regimeLo","Regime floor ×",0.60],["regimeHi","Regime ceiling ×",2.00],
  ["cooldown","Cooldown bars",2],["maxTrades","Max trades/day",5],["dailyLoss","Daily loss limit $",300],
- ["tpwLo","Target trades/wk low",3],["tpwHi","Target trades/wk high",8]];
+ ["tpwLo","Target trades/wk low",3],["tpwHi","Target trades/wk high",8],["fricTarget","Max friction %",7]];
 const OPTS=[["preset","Market preset"],["fixedSize","Fixed contracts"],["allowMinOne","Allow 1 ct min"],["autoCapStop","Auto-cap stop to risk $"],
  ["useRegime","ATR regime"],["useHTF","HTF filter"],["useSlope","EMA slope"],["pbRespectEMA","Pullback respects EMA"],
  ["useDailyLoss","Daily loss limit"],["beOn","Break-even"],["beCosts","BE covers costs"],["trailOn","Trail"],["timeOn","Time exit"]];
@@ -404,7 +411,8 @@ function renderTop(){
   const ok=d>=lo&&d<=hi; z=(cur>ema?"long zone":"short zone")+(ok?" \u2713":" out"); zc=ok?(cur>ema?"long":"short"):"warn";}
  document.getElementById("topChips").innerHTML=
   chip((S.opts.preset?"preset ":"manual ")+"<b>"+S.market+"</b> \u00b7 "+S.risk.rr+"R","cyan")+
-  chip("$"+sp.pv+"/pt","")+chip(P.recTF+"m chart","")+chip(P.sess,"")+chip(z,zc);
+  chip("$"+sp.pv+"/pt","")+chip(P.recTF+"m chart","")+
+  chip(P.sess==="0000-2400"?"24h":P.sess,P.sess==="0000-2400"?"warn":"")+chip(z,zc);
 }
 function renderMktInputs(){document.getElementById("mktGrid").innerHTML=MKT.map(f=>
  '<div class="f"><label>'+f[1]+'</label><input inputmode="decimal" data-mkt="'+f[0]+'" value="'+(S.mkt[f[0]]!=null?S.mkt[f[0]]:'')+'"></div>').join("");}
@@ -434,7 +442,11 @@ function renderReads(){
   ["SL buffer",atr?pts(atr*S.risk.slBuf)+" pts":"\u2014"],["EMA band",atr?pts(atr*S.risk.emaMin)+"\u2013"+pts(atr*S.risk.emaMax):"\u2014"],
   ["Depth req",atr?pts(atr*S.risk.depth)+" pts":"\u2014"],["Risk/trade",money(num(S.risk.riskDollar))],
   ["Cooldown",S.risk.cooldown+" bars"],["Daily cap",S.risk.maxTrades],
-  ["ATR S/L",P.atrS+" / "+P.atrL],["Chart TF",P.recTF+"m"]
+  ["ATR S/L",P.atrS+" / "+P.atrL],["Chart TF",P.recTF+"m"],
+  ["Time exit",(function(){const sp=P.sess;if(sp==="0000-2400")return Math.max(Math.round(1440/P.recTF),5)+" bars";
+    const a=parseInt(sp.slice(0,2))*60+parseInt(sp.slice(2,4)),b2=parseInt(sp.slice(5,7))*60+parseInt(sp.slice(7,9));
+    return Math.max(Math.round(Math.max(b2-a,30)/P.recTF),5)+" bars";})()],
+  ["Friction max",(num(S.risk.fricTarget)||7)+"%"]
  ].map(r=>'<div class="row"><span>'+r[0]+'</span><b>'+r[1]+'</b></div>').join("");
 }
 function renderEdge(){
@@ -447,8 +459,23 @@ function renderEdge(){
   ["Break-even win rate",E.beWR!=null?E.beWR.toFixed(1)+"%":"\u2014"],
   ["Your win rate",wr!=null?wr.toFixed(0)+"% ("+items.length+")":"\u2014"]
  ].map(r=>'<div class="row"><span>'+r[0]+'</span><b>'+r[1]+'</b></div>').join("");
- const rec=[];
- if(E.friction!=null&&E.friction>7) rec.push(["high","Costs are eating the edge",
+ // viability verdict (mirrors the Pine panel)
+ const fricT=num(S.risk.fricTarget)||7;
+ const stopReq=E.cp!=null?E.cp/(fricT/100):null;
+ const costOK=E.friction!=null&&E.friction<=fricT;
+ const tpw=items.length/Math.max(num(S.weeks)||1,1);
+ const rateOK=tpw>=(num(S.risk.tpwLo)||3);
+ const edge=(wr!=null&&E.beWR!=null)?wr-E.beWR:null;
+ const edgeOK=edge!=null&&edge>0;
+ const sized=!(S.opts.autoCapStop&&E.avgStop!=null&&false);
+ const verdict=!costOK?"SKIP - too costly":(items.length<30?"NEED MORE DATA":(!edgeOK?"NO EDGE":(rateOK?"TRADE":"TRADE (slow)")));
+ const vc=verdict==="TRADE"?"good":verdict==="TRADE (slow)"?"med":verdict==="NEED MORE DATA"?"info":"high";
+ const rec=[["".length?"":vc,"Verdict: "+verdict,
+   "Friction "+(E.friction!=null?E.friction.toFixed(1):"?")+"% of max "+fricT+"% \u00b7 "+
+   "edge "+(edge!=null?(edge>=0?"+":"")+edge.toFixed(1)+" pts vs break-even":"n/a")+" \u00b7 "+
+   tpw.toFixed(1)+"/wk \u00b7 "+items.length+" trades"+
+   (stopReq!=null&&!costOK?" \u00b7 need ~"+pts(stopReq)+" pt stop to hit target friction":"")]];
+ if(E.friction!=null&&E.friction>fricT) rec.push(["high","Costs are eating the edge",
   "Commission + slippage is "+E.friction.toFixed(1)+"% of your average stop (over ~7% is heavy). Trade a wider stop or fewer, better setups \u2014 or the fees alone need "+ (E.beWR?E.beWR.toFixed(1):"?") +"% wins to break even."]);
  if(E.beWR!=null&&wr!=null&&wr<E.beWR) rec.push(["high","Below break-even win rate",
   "You need "+E.beWR.toFixed(1)+"% to break even at 1:"+E.rr+" after costs; you're at "+wr.toFixed(0)+"%. Either raise R:R or tighten entry quality."]);
@@ -461,7 +488,11 @@ function renderSetups(){
   const C=calcSetup(Object.assign({sym:S.market,atr:num(S.mkt.atrS)},st)), L=st.dir==="Long";
   const stamp=!C.ok?'<span class="stamp">\u2014</span>':C.take?'<span class="stamp take">TAKE \u00d7'+C.qty+'</span>':'<span class="stamp skip">SKIP</span>';
   let res="";
-  if(C.ok){const why=!C.inB?(C.dist<C.minD?"stop too tight":"stop too wide"):(C.qty<1?"risk $ under 1 contract":"");
+  if(C.ok){const affor=(num(S.risk.riskDollar)||0)/Math.max(SPECS[S.market].pv,0.01);
+   const capA=affor/Math.max(num(S.mkt.atrS)||1,0.0001);
+   const tooLow=S.opts.autoCapStop&&!S.opts.fixedSize&&capA<(num(S.risk.minStop)||0);
+   const why=tooLow?"RAISE RISK $ - budget can't cover the minimum stop":
+     (!C.inB?(C.dist<C.minD?"stop too tight":"stop too wide"):(C.qty<1?"risk $ under 1 contract":""));
    res='<div class="res"><div class="resgrid">'+
     '<div class="cell"><span class="cl">Stop</span><span class="cv">'+px(C.stop)+'</span></div>'+
     '<div class="cell"><span class="cl">Dist</span><span class="cv sm">'+pts(C.dist)+' \u00b7 '+C.stopTicks.toFixed(0)+'t</span></div>'+
